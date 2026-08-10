@@ -23,7 +23,7 @@ CORE_BIN_DIR := $(BUILD_DIR)/bin
 CORE_SOURCE_DIR := src/core
 LINUX_SOURCE_DIR := src/linux
 
-.PHONY: check-toolchain core-test lazarus-core-test linux-app container-build container-test clean
+.PHONY: check-toolchain core-test lazarus-core-test linux-app audio-smoke-test container-build container-test clean
 
 check-toolchain:
 	FPC="$(FPC)" sh tools/check-fpc.sh
@@ -87,6 +87,12 @@ lazarus-core-test: check-toolchain
 linux-app: check-toolchain
 	mkdir -p $(CORE_UNIT_DIR) $(CORE_BIN_DIR)
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) MorseRunnerLinux.lpi
+
+audio-smoke-test: check-toolchain
+	mkdir -p $(CORE_UNIT_DIR) $(CORE_BIN_DIR)
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -Fu$(LINUX_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/portaudio-device-smoke-tests tests/PortAudioDeviceSmokeTests.lpr
+	$(CORE_BIN_DIR)/portaudio-device-smoke-tests
 
 container-build:
 	$(CONTAINER_RUNTIME) build -t $(CONTAINER_IMAGE) -f tools/Dockerfile .

@@ -680,6 +680,7 @@ The current wrapper targets are:
     make core-test
     make lazarus-core-test
     make linux-app
+    make audio-smoke-test
     make clean
 
 The first two compile and run the headless settings, QSO-log, contest-session,
@@ -693,6 +694,9 @@ The underlying application build uses:
     lazbuild --ws=gtk3 MorseRunnerLinux.lpi
 
 CI and packaging must use the same wrapper commands as developers.
+audio-smoke-test is deliberately excluded from ordinary CI because it opens the
+default output device; it emits only silence and verifies stream startup,
+callback sizing, and reported playback progress on a configured desktop.
 
 ### 13.3 Compiler policy
 
@@ -1147,6 +1151,9 @@ The first porting slice introduced:
   metadata without initializing a device, and exercise the callback-to-ring
   transfer, played-frame accounting, controller/session handoff, and
   underrun/mismatched-size paths without opening audio.
+- An opt-in default-device smoke test pre-fills silent PCM, opens a 11,025 Hz
+  mono PortAudio stream, verifies playback progress and fixed callback sizing,
+  then stops and closes the stream. It is not a CI requirement.
 
 This is intentionally parallel to the Delphi/VCL application. It does not yet
 replace the legacy global settings, Log.pas, or WinMM audio path. The next
@@ -1174,10 +1181,11 @@ through both direct FPC and Lazarus builds:
 The GTK3 LCL application also compiles to a 64-bit ELF binary that links
 libgtk-3, libgdk-3, and libportaudio. A three-second Xvfb launch smoke test
 previously kept the application running, but emitted GTK critical messages from
-Lazarus 4.8's GTK3 widgetset. The new native-preview start path requires a
-real audio device and has not been opened by automated validation. Docker
-remains unavailable to this session because its daemon socket is not
-accessible.
+Lazarus 4.8's GTK3 widgetset. The opt-in 11,025 Hz silent PortAudio smoke test
+also passed against this host's PipeWire/PulseAudio default HDMI sink, including
+callback sizing and shutdown. PortAudio emitted non-fatal ALSA/JACK backend
+probe messages while enumerating alternatives. Docker remains unavailable to
+this session because its daemon socket is not accessible.
 
 ## 23. References
 

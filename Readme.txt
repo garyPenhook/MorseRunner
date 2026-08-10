@@ -47,11 +47,15 @@ BUILDING AND TESTING
     make core-test
     make lazarus-core-test
     make linux-app
+    make audio-smoke-test
 
   The first two compile and run the headless test suite. The last creates the
   native GTK3 executable at:
 
     build/bin/morserunner-linux
+
+  audio-smoke-test is opt-in: it opens the default PortAudio output device and
+  plays a short block of silence to validate stream startup and callback sizing.
 
   Development requires PortAudio 19 and GTK3 development files. See
   LINUX_PORT_DESIGN.md for toolchain details, architecture decisions, current
