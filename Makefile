@@ -48,6 +48,9 @@ core-test: check-toolchain
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
 		-o$(CORE_BIN_DIR)/morse-keyer-tests tests/MorseKeyerTests.lpr
 	$(CORE_BIN_DIR)/morse-keyer-tests
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/morse-tone-renderer-tests tests/MorseToneRendererTests.lpr
+	$(CORE_BIN_DIR)/morse-tone-renderer-tests
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -Fu$(LINUX_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
 		-o$(CORE_BIN_DIR)/portaudio-output-tests tests/PortAudioOutputTests.lpr
 	$(CORE_BIN_DIR)/portaudio-output-tests
@@ -66,6 +69,8 @@ lazarus-core-test: check-toolchain
 	$(CORE_BIN_DIR)/legacy-pcm-producer-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/MorseKeyerTests.lpi
 	$(CORE_BIN_DIR)/morse-keyer-tests
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/MorseToneRendererTests.lpi
+	$(CORE_BIN_DIR)/morse-tone-renderer-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/PortAudioOutputTests.lpi
 	$(CORE_BIN_DIR)/portaudio-output-tests
 

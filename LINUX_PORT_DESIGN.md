@@ -676,9 +676,10 @@ The current wrapper targets are:
     make clean
 
 The first two compile and run the headless settings, QSO-log, contest-session,
-PCM-ring, legacy PCM-producer, Morse-keyer, and PortAudio callback tests. The
-Linux target compiles the GTK3 executable to build/bin/morserunner-linux. When
-the local toolchain exists, the Makefile selects it automatically.
+PCM-ring, legacy PCM-producer, Morse-keyer, Morse-tone-renderer, and PortAudio
+callback tests. The Linux target compiles the GTK3 executable to
+build/bin/morserunner-linux. When the local toolchain exists, the Makefile
+selects it automatically.
 
 The underlying application build uses:
 
@@ -1108,6 +1109,12 @@ The first porting slice introduced:
   without global state, forms, Ini, or sound-device dependencies.
 - Direct and Lazarus tests for case-insensitive CQ encoding, word spacing,
   a deterministic block-padded CQ envelope, and invalid timing rejection.
+- A UI-independent CW tone renderer derived from the legacy real-carrier
+  modulator. It preserves the legacy integer-cycle carrier quantization
+  (600 Hz becomes 612.5 Hz at 11,025 Hz), maintains phase across producer
+  blocks, and emits legacy-scale Single samples for the PCM producer.
+- Direct and Lazarus tests for quantization, carrier samples, phase
+  continuity, and invalid format parameters.
 - A narrow PortAudio 19 declaration and output owner. It owns exactly one
   default mono signed-16-bit stream, pairs successful initialization with
   termination, and uses no legacy global sound object.
@@ -1121,15 +1128,14 @@ The first porting slice introduced:
 
 This is intentionally parallel to the Delphi/VCL application. It does not yet
 replace the legacy global settings, Log.pas, or WinMM audio path. The next
-slice should connect this keyer to the legacy carrier/modulator and contest
-station state behind a real UI-independent renderer, have it supply the
-producer's legacy Single blocks, and commit those blocks to this ring. The
-prototype timer must be removed only when the output callback reports actual
-played-frame progress to the session.
+slice should connect the keyer/tone renderer to contest station state, feed
+its legacy Single blocks into the producer, and commit those blocks to this
+ring. The prototype timer must be removed only when the output callback
+reports actual played-frame progress to the session.
 
 ### Validation status (2026-08-10)
 
-The local FPC 3.2.2 install compiled and ran all seven headless test executables
+The local FPC 3.2.2 install compiled and ran all eight headless test executables
 through both direct FPC and Lazarus builds:
 
 - settings/timing;
@@ -1138,6 +1144,7 @@ through both direct FPC and Lazarus builds:
 - PCM SPSC ring behavior.
 - Legacy Single-to-PCM16 conversion and producer/ring handoff.
 - Morse encoding and deterministic keyer-envelope rendering.
+- Legacy-quantized CW carrier rendering and phase continuity.
 - PortAudio library linkage and callback/ring transfer without a physical
   output device.
 
