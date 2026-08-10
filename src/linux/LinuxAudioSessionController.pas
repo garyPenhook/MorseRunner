@@ -5,6 +5,7 @@ unit LinuxAudioSessionController;
 interface
 
 uses
+  CallList,
   ContestSession,
   ContestSettings,
   MorseMessageTemplate,
@@ -20,11 +21,17 @@ type
     FRing: TPcmSpscRing;
     FProducer: TMorseAudioProducer;
     FOutput: TPortAudioOutput;
+    FCallList: TCallList;
+    FPracticeCall: string;
     FQueuedMessage: string;
     FRepeatPreview: Boolean;
     FStatus: string;
     function GetSession: TContestSession;
     function PreviewMessage: string;
+    function GetPracticeCall: string;
+    function GetCallListCount: Integer;
+    procedure LoadCallList;
+    procedure SelectPracticeCall;
     procedure ProduceUntilRingFull;
     procedure CloseOutput(const AbortStream: Boolean);
   public
@@ -38,6 +45,8 @@ type
 
     property Session: TContestSession read GetSession;
     property Settings: TContestSettings read FSettings;
+    property PracticeCall: string read GetPracticeCall;
+    property CallListCount: Integer read GetCallListCount;
     property Status: string read FStatus;
   end;
 
@@ -57,7 +66,13 @@ begin
   FProducer := TMorseAudioProducer.Create(FRing, FSettings.Wpm,
     FSettings.Audio.SampleRate, FSettings.PitchHz, 6000);
   FOutput := TPortAudioOutput.Create(FRing);
-  FStatus := 'Audio idle: choose a mode and start the native preview.';
+  FCallList := TCallList.Create;
+  FPracticeCall := 'P29SX';
+  LoadCallList;
+  if FCallList.Count > 0 then
+    FStatus := Format('Audio idle: %d contest calls available.', [FCallList.Count])
+  else
+    FStatus := 'Audio idle: bundled caller list is unavailable.';
 end;
 
 destructor TLinuxAudioSessionController.Destroy;
@@ -71,6 +86,7 @@ begin
   FProducer.Free;
   FRing.Free;
   FSession.Free;
+  FCallList.Free;
   inherited Destroy;
 end;
 
@@ -82,7 +98,36 @@ end;
 function TLinuxAudioSessionController.PreviewMessage: string;
 begin
   Result := ExpandMorseMessageTemplate('CQ <my> TEST', FSettings.Callsign,
-    '', 599, 1);
+    FPracticeCall, 599, FSession.Log.Count + 1);
+end;
+
+function TLinuxAudioSessionController.GetPracticeCall: string;
+begin
+  Result := FPracticeCall;
+end;
+
+function TLinuxAudioSessionController.GetCallListCount: Integer;
+begin
+  Result := FCallList.Count;
+end;
+
+procedure TLinuxAudioSessionController.LoadCallList;
+var
+  FileName: string;
+begin
+  FileName := FindMasterScp;
+  if FileName = '' then
+    FileName := FindMasterDta;
+  if FileName <> '' then
+    FCallList.Load(FileName);
+end;
+
+procedure TLinuxAudioSessionController.SelectPracticeCall;
+begin
+  if FCallList.Count > 0 then
+    FPracticeCall := FCallList.Pick(FSession.Log.Count)
+  else
+    FPracticeCall := 'P29SX';
 end;
 
 procedure TLinuxAudioSessionController.ProduceUntilRingFull;
@@ -150,15 +195,19 @@ begin
   FRing.Reset;
   FProducer.Reset;
   FQueuedMessage := '';
-  FRepeatPreview := True;
+  SelectPracticeCall;
+  FRepeatPreview := Mode <> rmSingle;
   FSession.Start(Mode);
   try
     FOutput.Open(FSettings.Audio.SampleRate);
+    if Mode = rmSingle then
+      FQueuedMessage := ExpandMorseMessageTemplate('DE <his> <his>',
+        FSettings.Callsign, FPracticeCall, 599, FSession.Log.Count + 1);
     ProduceUntilRingFull;
     FOutput.Start;
     FStatus := Format(
-      'Native PortAudio preview active: %d Hz, %d-frame blocks, CQ loop.',
-      [FSettings.Audio.SampleRate, FSettings.Audio.FramesPerBlock]);
+      'Native preview active: %d calls loaded; current caller %s.',
+      [FCallList.Count, FPracticeCall]);
   except
     on Error: Exception do
     begin
@@ -200,7 +249,7 @@ begin
     raise EArgumentException.Create('Enter text to transmit.');
 
   FQueuedMessage := ExpandMorseMessageTemplate(MessageText, FSettings.Callsign,
-    '', 599, FSession.Log.Count + 1);
+    FPracticeCall, 599, FSession.Log.Count + 1);
   FRepeatPreview := False;
   FStatus := 'Queued Morse transmission: ' + FQueuedMessage;
 end;

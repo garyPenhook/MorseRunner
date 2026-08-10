@@ -92,6 +92,10 @@ begin
   if Result <> '' then
     Exit;
   Result := ExistingFile(IncludeTrailingPathDelimiter(GetCurrentDir) +
+    'data' + PathDelim + 'MASTER.SCP');
+  if Result <> '' then
+    Exit;
+  Result := ExistingFile(IncludeTrailingPathDelimiter(GetCurrentDir) +
     'MASTER.SCP');
   if Result <> '' then
     Exit;

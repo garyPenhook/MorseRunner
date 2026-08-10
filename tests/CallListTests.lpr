@@ -145,11 +145,31 @@ begin
   end;
 end;
 
+procedure TestBundledSuperCheckPartial;
+var
+  FileName: string;
+  List: TCallList;
+begin
+  FileName := 'data/MASTER.SCP';
+  if not FileExists(FileName) then
+    FileName := '../data/MASTER.SCP';
+  Check(FileExists(FileName), 'bundled Super Check Partial snapshot exists');
+
+  List := TCallList.Create;
+  try
+    List.Load(FileName);
+    Check(List.Count >= 1000, 'bundled call list has a contest-scale population');
+  finally
+    List.Free;
+  end;
+end;
+
 begin
   try
     TestLoadAndPick;
     TestRejectsBadData;
     TestSuperCheckPartial;
+    TestBundledSuperCheckPartial;
     WriteLn('Call list tests passed.');
   except
     on Error: Exception do

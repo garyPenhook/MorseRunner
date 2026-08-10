@@ -283,6 +283,10 @@ begin
   FStateLabel.Caption := Format('Session: %s (end reason: %s)',
     [StateText[FAudioController.Session.State],
     EndText[FAudioController.Session.EndReason]]);
+  if FAudioController.Session.State = ssRunning then
+    FStateLabel.Caption := FStateLabel.Caption + Format(
+      '  Caller: %s (%d database calls)', [FAudioController.PracticeCall,
+      FAudioController.CallListCount]);
   FClockLabel.Caption := Format('Playback clock: %.3f seconds, %d frames',
     [FAudioController.Session.ElapsedSeconds,
     FAudioController.Session.ConsumedFrames]);

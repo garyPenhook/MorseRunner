@@ -542,8 +542,10 @@ and NUL-delimited callsign payload into sorted, deduplicated Pascal strings. It
 also reads Super Check Partial's line-based MASTER.SCP format, and
 make update-call-list downloads the current contest list into the user's XDG
 data directory with basic format/count validation before atomic replacement.
-The source data is user-owned and is not committed as a repository snapshot.
-The caller-engine integration is the next step.
+A versioned development snapshot is also kept at data/MASTER.SCP for offline
+source checkouts; the user-owned XDG copy takes precedence. The native
+single-session preview selects a caller from this list and sends its callsign;
+the full caller state machine remains the next step.
 
 ## 10. User Interface
 

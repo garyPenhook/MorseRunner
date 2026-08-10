@@ -75,6 +75,10 @@ BUILDING AND TESTING
   $XDG_DATA_HOME/morserunner (or ~/.local/share), the current directory, and
   /usr/share/morserunner.
 
+  A current MASTER.SCP snapshot is also bundled in data/ for development and
+  offline use. Select "Single-session preview" to hear a caller selected from
+  that database; <his> in transmitted text resolves to the displayed caller.
+
   Development requires PortAudio 19 and GTK3 development files. See
   LINUX_PORT_DESIGN.md for toolchain details, architecture decisions, current
   validation status, and the remaining migration plan.
