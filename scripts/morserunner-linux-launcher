@@ -7,8 +7,17 @@
 # diagnostics in the XDG state directory. Set MORSERUNNER_DEBUG=1 to send them
 # to the terminal instead.
 set -eu
-ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-ENGINE="$ROOT_DIR/native/engine/MorseRunner"
+WRAPPER_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+SOURCE_ROOT=$(CDPATH= cd -- "$WRAPPER_DIR/../.." && pwd)
+INSTALL_ROOT=$(CDPATH= cd -- "$WRAPPER_DIR/.." && pwd)
+SOURCE_ENGINE="$SOURCE_ROOT/native/engine/MorseRunner"
+INSTALLED_ENGINE="$INSTALL_ROOT/lib/morserunner/MorseRunner"
+
+if [ -x "$SOURCE_ENGINE" ]; then
+  ENGINE="$SOURCE_ENGINE"
+else
+  ENGINE="$INSTALLED_ENGINE"
+fi
 
 if [ "${MORSERUNNER_DEBUG:-}" = "1" ]; then
   exec "$ENGINE" "$@"

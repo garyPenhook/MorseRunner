@@ -48,6 +48,12 @@ documentation. Linux builds must describe the native `make linux-app` and
 `build/bin/morserunner-linux` workflow, XDG data locations, and the local
 repository rather than legacy Windows/Wine installation instructions.
 
+The build supplies a freedesktop.org desktop entry and icon. `make install`
+uses `/usr/local` by default; a user-local installation can use
+`make install PREFIX="$HOME/.local"`. The installed launcher keeps contest
+data beside the engine under `lib/morserunner`, while settings and recordings
+continue to use the XDG user-data location.
+
 An existing Lazarus/PortAudio fork and the Debian morserunner package provide
 useful conversion work. Their forms, compiler fixes, call-list data, desktop
 integration, and packaging should be imported with attribution. Their

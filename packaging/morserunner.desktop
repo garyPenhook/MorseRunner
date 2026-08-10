@@ -1,0 +1,11 @@
+[Desktop Entry]
+Type=Application
+Version=1.0
+Name=Morse Runner
+Comment=Native Linux CW contest simulator
+Exec=morserunner-linux
+Icon=morserunner
+Terminal=false
+Categories=Education;
+Keywords=CW;Morse;Amateur Radio;Contest;Ham Radio;
+StartupNotify=true

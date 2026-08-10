@@ -16,6 +16,12 @@ LAZBUILD_ARGS := --lazarusdir=$(LOCAL_LAZARUS_DIR) --ws=gtk3
 endif
 CONTAINER_RUNTIME ?= docker
 CONTAINER_IMAGE ?= morserunner-linux-build
+PREFIX ?= /usr/local
+BINDIR ?= $(PREFIX)/bin
+LIBEXECDIR ?= $(PREFIX)/lib/morserunner
+DATADIR ?= $(PREFIX)/share/morserunner
+DESKTOPDIR ?= $(PREFIX)/share/applications
+ICONDIR ?= $(PREFIX)/share/icons/hicolor/128x128/apps
 
 BUILD_DIR := build
 # Direct FPC test builds and Lazarus projects use incompatible debug metadata.
@@ -31,8 +37,11 @@ ENGINE_BINARY := $(ENGINE_DIR)/MorseRunner
 ENGINE_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-scp-patch-applied
 ENGINE_UI_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-ui-patch-applied
 ENGINE_HELP_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-help-patch-applied
+ENGINE_RUNTIME_DATA := ARRLDXCW_USDX.txt CQWWCW.txt CWOPS.LIST DXCC.LIST \
+	FDGOTA.txt IARU_HF.txt JARL_ACAG.TXT JARL_ALLJA.TXT K1USNSST.txt \
+	MASTER.DTA MASTER.SCP NAQPCW.txt Readme.txt SSCW.txt
 
-.PHONY: check-toolchain check-native-engine core-test lazarus-core-test linux-app preview-app audio-smoke-test update-call-list container-build container-test clean
+.PHONY: check-toolchain check-native-engine core-test lazarus-core-test linux-app install preview-app audio-smoke-test update-call-list container-build container-test clean
 
 check-toolchain:
 	FPC="$(FPC)" sh tools/check-fpc.sh
@@ -136,6 +145,17 @@ $(ENGINE_HELP_PATCH_STAMP): patches/engine-linux-help.patch $(ENGINE_UI_PATCH_ST
 $(CORE_BIN_DIR)/morserunner-linux: scripts/morserunner-linux-launcher
 	mkdir -p $(CORE_BIN_DIR)
 	install -m 755 $< $@
+
+# Install a self-contained native Linux layout. The engine deliberately keeps
+# its read-only contest files alongside its executable, while user state stays
+# in the XDG data directory.
+install: linux-app packaging/morserunner.desktop
+	install -d "$(BINDIR)" "$(LIBEXECDIR)" "$(DATADIR)" "$(DESKTOPDIR)" "$(ICONDIR)"
+	install -m 755 scripts/morserunner-linux-launcher "$(BINDIR)/morserunner-linux"
+	install -m 755 $(ENGINE_BINARY) "$(LIBEXECDIR)/MorseRunner"
+	install -m 644 $(addprefix $(ENGINE_DIR)/,$(ENGINE_RUNTIME_DATA)) "$(LIBEXECDIR)/"
+	install -m 644 packaging/morserunner.desktop "$(DESKTOPDIR)/morserunner.desktop"
+	install -m 644 $(ENGINE_DIR)/MorseRunner.png "$(ICONDIR)/morserunner.png"
 
 # Retained only for testing the new audio seam while the old engine is migrated.
 preview-app: check-toolchain
