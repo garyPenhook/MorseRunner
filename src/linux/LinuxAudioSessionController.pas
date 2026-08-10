@@ -11,7 +11,9 @@ uses
   MorseMessageTemplate,
   MorseAudioProducer,
   PcmRing,
-  PortAudioOutput;
+  PortAudioOutput,
+  QsoLog,
+  SingleCallerPractice;
 
 type
   TLinuxAudioSessionController = class
@@ -23,7 +25,9 @@ type
     FOutput: TPortAudioOutput;
     FCallList: TCallList;
     FPracticeCall: string;
+    FSingleCaller: TSingleCallerPractice;
     FQueuedMessage: string;
+    FReplyMessage: string;
     FRepeatPreview: Boolean;
     FStatus: string;
     function GetSession: TContestSession;
@@ -87,6 +91,7 @@ begin
   FRing.Free;
   FSession.Free;
   FCallList.Free;
+  FSingleCaller.Free;
   inherited Destroy;
 end;
 
@@ -141,6 +146,11 @@ begin
         FProducer.PrepareMessage(FQueuedMessage);
         FQueuedMessage := '';
       end
+      else if FReplyMessage <> '' then
+      begin
+        FProducer.PrepareMessage(FReplyMessage);
+        FReplyMessage := '';
+      end
       else if FRepeatPreview then
         FProducer.PrepareMessage(PreviewMessage)
       else
@@ -170,6 +180,8 @@ begin
     FSettings.Audio.SampleRate, FSettings.PitchHz, 6000);
   FOutput := TPortAudioOutput.Create(FRing);
   FQueuedMessage := '';
+  FReplyMessage := '';
+  FreeAndNil(FSingleCaller);
   FRepeatPreview := False;
   FStatus := 'Audio idle: settings updated.';
 end;
@@ -195,14 +207,19 @@ begin
   FRing.Reset;
   FProducer.Reset;
   FQueuedMessage := '';
+  FReplyMessage := '';
+  FreeAndNil(FSingleCaller);
   SelectPracticeCall;
   FRepeatPreview := Mode <> rmSingle;
   FSession.Start(Mode);
   try
     FOutput.Open(FSettings.Audio.SampleRate);
     if Mode = rmSingle then
-      FQueuedMessage := ExpandMorseMessageTemplate('DE <his> <his>',
-        FSettings.Callsign, FPracticeCall, 599, FSession.Log.Count + 1);
+    begin
+      FSingleCaller := TSingleCallerPractice.Create(FPracticeCall,
+        FSession.Log.Count + 1);
+      FQueuedMessage := FSingleCaller.Start;
+    end;
     ProduceUntilRingFull;
     FOutput.Start;
     FStatus := Format(
@@ -219,6 +236,8 @@ begin
       FRing.Reset;
       FProducer.Reset;
       FQueuedMessage := '';
+      FReplyMessage := '';
+      FreeAndNil(FSingleCaller);
       FRepeatPreview := False;
       FStatus := 'Audio start failed: ' + Error.Message;
       raise;
@@ -233,6 +252,8 @@ begin
   FProducer.Reset;
   FRing.Reset;
   FQueuedMessage := '';
+  FReplyMessage := '';
+  FreeAndNil(FSingleCaller);
   FRepeatPreview := False;
   FStatus := 'Audio stopped.';
 end;
@@ -240,6 +261,8 @@ end;
 procedure TLinuxAudioSessionController.QueueMessage(const TemplateText: string);
 var
   MessageText: string;
+  ReplyText: string;
+  CompletedQso: TQso;
 begin
   if FSession.State <> ssRunning then
     raise EInvalidOp.Create('Start the audio session before transmitting.');
@@ -250,8 +273,19 @@ begin
 
   FQueuedMessage := ExpandMorseMessageTemplate(MessageText, FSettings.Callsign,
     FPracticeCall, 599, FSession.Log.Count + 1);
+  if Assigned(FSingleCaller) and
+     FSingleCaller.ReceiveOperatorText(FQueuedMessage, ReplyText, CompletedQso) then
+  begin
+    FReplyMessage := ReplyText;
+    if CompletedQso.TrueCall <> '' then
+      FSession.SubmitQso(CompletedQso);
+  end;
   FRepeatPreview := False;
-  FStatus := 'Queued Morse transmission: ' + FQueuedMessage;
+  if Assigned(FSingleCaller) then
+    FStatus := 'Practice caller ' + FPracticeCall + ': ' +
+      SingleCallerStateText(FSingleCaller.State)
+  else
+    FStatus := 'Queued Morse transmission: ' + FQueuedMessage;
 end;
 
 procedure TLinuxAudioSessionController.Tick;
@@ -267,8 +301,13 @@ begin
   else if FOutput.State <> paosClosed then
     CloseOutput(False);
 
-  FStatus := Format('Native PortAudio preview: %d playback frames, %d underruns.',
-    [FOutput.PlayedFrames, FRing.UnderrunCount]);
+  if Assigned(FSingleCaller) then
+    FStatus := Format('Practice caller %s: %s. %d QSO(s) logged; %d playback frames, %d underruns.',
+      [FPracticeCall, SingleCallerStateText(FSingleCaller.State),
+       FSession.Log.Count, FOutput.PlayedFrames, FRing.UnderrunCount])
+  else
+    FStatus := Format('Native PortAudio preview: %d playback frames, %d underruns.',
+      [FOutput.PlayedFrames, FRing.UnderrunCount]);
 end;
 
 end.

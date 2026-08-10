@@ -16,18 +16,18 @@ PORT STATUS
   The port is under active development. The current native Linux foundation
   includes:
 
-  - a GTK3 Lazarus native-preview executable that plays a default-device CQ
-    loop through PortAudio and can queue operator-entered Morse text;
+  - a GTK3 Lazarus native-preview executable that plays through PortAudio and
+    includes a working, database-backed Single Calls practice exchange;
   - headless settings/XDG persistence, timing, logging/scoring,
     contest-session, PCM-ring, legacy PCM conversion, and Morse-keyer core
     units;
   - a PortAudio 19 output boundary that consumes preallocated PCM blocks; and
   - direct Free Pascal and Lazarus test projects.
 
-  It is not yet a complete replacement for the historic application: station
-  simulation/DSP integration, full contest UI migration, actual playback-frame
-  clock reporting, recording, and Linux packaging are still in progress. The
-  GUI timer polls callback-reported frames; it is not a simulation clock.
+  It is not yet a complete replacement for the historic application: the
+  original multi-station simulation/DSP integration, full contest UI migration,
+  recording, and Linux packaging are still in progress. The GUI timer polls
+  callback-reported frames; it is not a simulation clock.
 
 
 PLATFORM
@@ -61,8 +61,14 @@ BUILDING AND TESTING
   The current native window lets you set your callsign, CW speed, pitch, and
   session duration before Start. Once running, enter text in the transmit field
   and click "Transmit text"; <my>, <his>, and <#> message placeholders are
-  expanded before the queued message is keyed. This is a Morse-sender preview,
-  not yet the original station/pile-up simulator.
+  expanded before the queued message is keyed.
+
+  In "Single-session preview", the application selects a callsign from the
+  bundled worldwide contest list, calls it, and shows that caller on screen.
+  To complete the current practice QSO: let the caller finish, transmit the
+  prefilled "<his> <#>" exchange, wait for "R 599nnn", then transmit "TU".
+  The app sends its final TU and logs the verified QSO. This is the current
+  working practice loop, not the original pile-up simulator.
 
   The extracted call-list service accepts legacy Master.dta and Super Check
   Partial MASTER.SCP format. To install the current worldwide contest list in
@@ -70,10 +76,9 @@ BUILDING AND TESTING
 
     make update-call-list
 
-  The source file remains user-owned data rather than a repository snapshot.
-  Future station simulation searches an explicitly configured file first, then
-  $XDG_DATA_HOME/morserunner (or ~/.local/share), the current directory, and
-  /usr/share/morserunner.
+  The downloaded file is user-owned data in $XDG_DATA_HOME/morserunner (or
+  ~/.local/share). The application searches it first, then the bundled data/
+  snapshot, the current directory, and /usr/share/morserunner.
 
   A current MASTER.SCP snapshot is also bundled in data/ for development and
   offline use. Select "Single-session preview" to hear a caller selected from

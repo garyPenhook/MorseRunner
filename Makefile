@@ -18,7 +18,9 @@ CONTAINER_RUNTIME ?= docker
 CONTAINER_IMAGE ?= morserunner-linux-build
 
 BUILD_DIR := build
-CORE_UNIT_DIR := $(BUILD_DIR)/units
+# Direct FPC test builds and Lazarus projects use incompatible debug metadata.
+# Keep their unit caches separate so either command may follow the other.
+CORE_UNIT_DIR := $(BUILD_DIR)/fpc-units
 CORE_BIN_DIR := $(BUILD_DIR)/bin
 CORE_SOURCE_DIR := src/core
 LINUX_SOURCE_DIR := src/linux
@@ -63,6 +65,9 @@ core-test: check-toolchain
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
 		-o$(CORE_BIN_DIR)/morse-message-template-tests tests/MorseMessageTemplateTests.lpr
 	$(CORE_BIN_DIR)/morse-message-template-tests
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/single-caller-practice-tests tests/SingleCallerPracticeTests.lpr
+	$(CORE_BIN_DIR)/single-caller-practice-tests
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -Fu$(LINUX_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
 		-o$(CORE_BIN_DIR)/portaudio-output-tests tests/PortAudioOutputTests.lpr
 	$(CORE_BIN_DIR)/portaudio-output-tests
@@ -91,6 +96,8 @@ lazarus-core-test: check-toolchain
 	$(CORE_BIN_DIR)/morse-audio-producer-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/MorseMessageTemplateTests.lpi
 	$(CORE_BIN_DIR)/morse-message-template-tests
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/SingleCallerPracticeTests.lpi
+	$(CORE_BIN_DIR)/single-caller-practice-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/PortAudioOutputTests.lpi
 	$(CORE_BIN_DIR)/portaudio-output-tests
 

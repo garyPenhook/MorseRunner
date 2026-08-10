@@ -240,6 +240,8 @@ begin
   try
     FAudioController.Configure(EditedSettings);
     FAudioController.Start(SelectedMode);
+    if SelectedMode = rmSingle then
+      FTransmitEdit.Text := '<his> <#>';
     FClockTimer.Enabled := True;
   except
     FClockTimer.Enabled := False;
@@ -287,9 +289,9 @@ begin
     FStateLabel.Caption := FStateLabel.Caption + Format(
       '  Caller: %s (%d database calls)', [FAudioController.PracticeCall,
       FAudioController.CallListCount]);
-  FClockLabel.Caption := Format('Playback clock: %.3f seconds, %d frames',
+  FClockLabel.Caption := Format('Playback clock: %.3f seconds, %d frames, %d QSO(s)',
     [FAudioController.Session.ElapsedSeconds,
-    FAudioController.Session.ConsumedFrames]);
+    FAudioController.Session.ConsumedFrames, FAudioController.Session.Log.Count]);
   FAudioStatusLabel.Caption := FAudioController.Status;
   FStartButton.Enabled := FAudioController.Session.State <> ssRunning;
   FStopButton.Enabled := FAudioController.Session.State = ssRunning;

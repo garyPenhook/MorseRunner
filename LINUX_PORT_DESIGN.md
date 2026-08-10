@@ -29,6 +29,13 @@ code to modify form controls directly. The port must first establish explicit
 boundaries between the user interface, simulation engine, audio transport,
 recording, and persistence.
 
+The current Linux build includes a deliberately narrow, tested single-caller
+practice loop. It selects a real callsign from the bundled Super Check Partial
+list, sends `DE <caller> <caller>`, accepts a transmitted `<his> <#>` exchange,
+answers with `R 599nnn`, and logs a verified QSO after `TU` or `TNX`. This is a
+working vertical slice, not a replacement for the original pile-up station
+simulator; bringing that simulator across remains the next major porting task.
+
 An existing Lazarus/PortAudio fork and the Debian morserunner package provide
 useful conversion work. Their forms, compiler fixes, call-list data, desktop
 integration, and packaging should be imported with attribution. Their
