@@ -64,6 +64,11 @@ BUILDING AND TESTING
   expanded before the queued message is keyed. This is a Morse-sender preview,
   not yet the original station/pile-up simulator.
 
+  The extracted call-list service accepts the legacy Master.dta format. Future
+  station simulation searches an explicitly configured file first, then
+  $XDG_DATA_HOME/morserunner/Master.dta (or ~/.local/share), the current
+  directory, and /usr/share/morserunner.
+
   Development requires PortAudio 19 and GTK3 development files. See
   LINUX_PORT_DESIGN.md for toolchain details, architecture decisions, current
   validation status, and the remaining migration plan.

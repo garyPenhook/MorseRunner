@@ -37,6 +37,9 @@ core-test: check-toolchain
 		-o$(CORE_BIN_DIR)/settings-store-tests tests/SettingsStoreTests.lpr
 	$(CORE_BIN_DIR)/settings-store-tests
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/call-list-tests tests/CallListTests.lpr
+	$(CORE_BIN_DIR)/call-list-tests
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
 		-o$(CORE_BIN_DIR)/qso-log-tests tests/QsoLogTests.lpr
 	$(CORE_BIN_DIR)/qso-log-tests
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
@@ -70,6 +73,8 @@ lazarus-core-test: check-toolchain
 	$(CORE_BIN_DIR)/core-settings-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/SettingsStoreTests.lpi
 	$(CORE_BIN_DIR)/settings-store-tests
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/CallListTests.lpi
+	$(CORE_BIN_DIR)/call-list-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/QsoLogTests.lpi
 	$(CORE_BIN_DIR)/qso-log-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/ContestSessionTests.lpi

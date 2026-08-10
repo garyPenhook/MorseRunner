@@ -537,6 +537,11 @@ must show a non-fatal warning.
 Verify the provenance and redistribution terms of the imported Master.dta
 before release.
 
+Current implementation: TCallList safely validates and reads the legacy index
+and NUL-delimited callsign payload into sorted, deduplicated Pascal strings.
+It follows the documented explicit/XDG/current-directory/system search order;
+the caller-engine integration is the next step.
+
 ## 10. User Interface
 
 ### 10.1 Layout
@@ -1092,6 +1097,11 @@ The first porting slice introduced:
 - Direct and Lazarus tests cover native-settings round trips, normalization,
   legacy INI conversion, persistence of the import, and native-file precedence
   after import.
+- A UI-independent TCallList that reads validated legacy Master.dta call lists
+  into owned strings, removes pointer-width assumptions, deduplicates entries,
+  and follows the XDG-first data search path. Direct and Lazarus fixtures cover
+  valid indexed data, duplicate removal, safe selection, and malformed-input
+  rejection.
 - A ContestTiming unit that makes the sample/frame clock explicit without
   depending on Ini, Main, or any LCL unit.
 - A standalone headless test executable for defaults, settings normalization,
