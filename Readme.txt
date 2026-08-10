@@ -16,7 +16,8 @@ PORT STATUS
   The port is under active development. The current native Linux foundation
   includes:
 
-  - a GTK3 Lazarus smoke-test executable;
+  - a GTK3 Lazarus native-preview executable that plays a default-device CQ
+    loop through PortAudio;
   - headless settings, timing, logging/scoring, contest-session, PCM-ring,
     legacy PCM conversion, and Morse-keyer core units;
   - a PortAudio 19 output boundary that consumes preallocated PCM blocks; and
@@ -25,7 +26,7 @@ PORT STATUS
   It is not yet a complete replacement for the historic application: station
   simulation/DSP integration, full contest UI migration, actual playback-frame
   clock reporting, recording, and Linux packaging are still in progress. The
-  current GUI timer is explicitly a prototype, not an audio clock.
+  GUI timer polls callback-reported frames; it is not a simulation clock.
 
 
 PLATFORM

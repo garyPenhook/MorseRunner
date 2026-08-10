@@ -12,13 +12,13 @@ uses
   StdCtrls,
   ExtCtrls,
   ContestSettings,
-  ContestSession;
+  ContestSession,
+  LinuxAudioSessionController;
 
 type
   TMainForm = class(TForm)
   private
-    FSession: TContestSession;
-    FClockStartedAtMs: QWord;
+    FAudioController: TLinuxAudioSessionController;
     FModeBox: TComboBox;
     FStartButton: TButton;
     FStopButton: TButton;
@@ -46,13 +46,13 @@ var
   Settings: TContestSettings;
 begin
   inherited Create(TheOwner);
-  Caption := 'MorseRunner Linux — engine prototype';
+  Caption := 'MorseRunner Linux — native audio preview';
   Position := poScreenCenter;
   ClientWidth := 510;
   ClientHeight := 220;
 
   Settings := DefaultContestSettings;
-  FSession := TContestSession.Create(Settings);
+  FAudioController := TLinuxAudioSessionController.Create(Settings);
 
   FModeBox := TComboBox.Create(Self);
   FModeBox.Parent := Self;
@@ -100,9 +100,7 @@ begin
   FAudioStatusLabel.Top := 145;
   FAudioStatusLabel.Width := 460;
   FAudioStatusLabel.WordWrap := True;
-  FAudioStatusLabel.Caption :=
-    'Audio: not connected. This clock is a UI smoke-test stand-in; ' +
-    'the future audio callback will be the only production source of consumed frames.';
+  FAudioStatusLabel.Caption := FAudioController.Status;
 
   FClockTimer := TTimer.Create(Self);
   FClockTimer.Interval := 30;
@@ -113,7 +111,7 @@ end;
 
 destructor TMainForm.Destroy;
 begin
-  FSession.Free;
+  FAudioController.Free;
   inherited Destroy;
 end;
 
@@ -130,31 +128,26 @@ end;
 
 procedure TMainForm.StartButtonClick(Sender: TObject);
 begin
-  FSession.Start(SelectedMode);
-  FClockStartedAtMs := GetTickCount64;
-  FClockTimer.Enabled := True;
+  try
+    FAudioController.Start(SelectedMode);
+    FClockTimer.Enabled := True;
+  except
+    FClockTimer.Enabled := False;
+  end;
   RefreshView;
 end;
 
 procedure TMainForm.StopButtonClick(Sender: TObject);
 begin
-  FSession.RequestStop;
+  FAudioController.Stop;
   FClockTimer.Enabled := False;
   RefreshView;
 end;
 
 procedure TMainForm.ClockTimerTick(Sender: TObject);
-var
-  TargetFrames: Int64;
-  DeltaFrames: Int64;
 begin
-  TargetFrames :=
-    (Int64(GetTickCount64 - FClockStartedAtMs) *
-      FSession.Settings.Audio.SampleRate) div 1000;
-  DeltaFrames := TargetFrames - FSession.ConsumedFrames;
-  if DeltaFrames > 0 then
-    FSession.ConsumeFrames(DeltaFrames);
-  if FSession.State <> ssRunning then
+  FAudioController.Tick;
+  if FAudioController.Session.State <> ssRunning then
     FClockTimer.Enabled := False;
   RefreshView;
 end;
@@ -167,11 +160,14 @@ const
     ('none', 'time elapsed', 'user stop');
 begin
   FStateLabel.Caption := Format('Session: %s (end reason: %s)',
-    [StateText[FSession.State], EndText[FSession.EndReason]]);
-  FClockLabel.Caption := Format('Prototype sample clock: %.3f seconds, %d frames',
-    [FSession.ElapsedSeconds, FSession.ConsumedFrames]);
-  FStartButton.Enabled := FSession.State <> ssRunning;
-  FStopButton.Enabled := FSession.State = ssRunning;
+    [StateText[FAudioController.Session.State],
+    EndText[FAudioController.Session.EndReason]]);
+  FClockLabel.Caption := Format('Playback clock: %.3f seconds, %d frames',
+    [FAudioController.Session.ElapsedSeconds,
+    FAudioController.Session.ConsumedFrames]);
+  FAudioStatusLabel.Caption := FAudioController.Status;
+  FStartButton.Enabled := FAudioController.Session.State <> ssRunning;
+  FStopButton.Enabled := FAudioController.Session.State = ssRunning;
 end;
 
 end.

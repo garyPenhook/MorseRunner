@@ -11,7 +11,7 @@
     <BuildModes Count="1">
       <Item1 Name="Default" Default="True"/>
     </BuildModes>
-    <Units Count="2">
+    <Units Count="3">
       <Unit0>
         <Filename Value="src/linux/MorseRunnerLinux.lpr"/>
         <IsPartOfProject Value="True"/>
@@ -20,6 +20,10 @@
         <Filename Value="src/linux/LinuxMainForm.pas"/>
         <IsPartOfProject Value="True"/>
       </Unit1>
+      <Unit2>
+        <Filename Value="src/linux/LinuxAudioSessionController.pas"/>
+        <IsPartOfProject Value="True"/>
+      </Unit2>
     </Units>
     <RequiredPackages Count="1">
       <Item1>

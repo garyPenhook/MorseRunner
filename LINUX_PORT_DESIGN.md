@@ -1091,9 +1091,10 @@ The first porting slice introduced:
   mode-specific score selection. It establishes the audio-consumed frame count
   as the session time boundary; it has no LCL or audio-library dependency.
 - A minimal Lazarus GTK3 executable that creates the first native Linux window
-  and demonstrates start/stop state plus a prototype sample clock. Its timer is
-  explicitly a UI smoke-test stand-in, not an audio implementation: production
-  frames must come only from the future PortAudio output path.
+  and starts a default-device CQ preview through PortAudio. Its UI timer now
+  polls and applies callback-reported playback frames; it no longer simulates
+  session time from wall-clock milliseconds. Device opening remains an
+  interactive hardware path that needs broader runtime validation.
 - A project-local FPC 3.2.2 and Lazarus 4.8/GTK3 toolchain, used because the
   system fpc command is unrelated to Free Pascal and system-wide installation
   requires interactive sudo credentials.
@@ -1143,9 +1144,9 @@ The first porting slice introduced:
 
 This is intentionally parallel to the Delphi/VCL application. It does not yet
 replace the legacy global settings, Log.pas, or WinMM audio path. The next
-slice should connect contest-station state and command handling to the
-producer, start/prefill the PortAudio stream, and replace the prototype timer
-with controller-driven TakePlayedFrames updates.
+slice should connect contest-station state and command handling to the preview
+producer, replace its temporary CQ loop, and validate the default-device start,
+stop, and error paths on real PipeWire and PulseAudio desktops.
 
 ### Validation status (2026-08-10)
 
@@ -1164,11 +1165,12 @@ through both direct FPC and Lazarus builds:
   without a physical output device.
 
 The GTK3 LCL application also compiles to a 64-bit ELF binary that links
-libgtk-3 and libgdk-3. A three-second Xvfb launch smoke test kept the
-application running, but emitted GTK critical messages from Lazarus 4.8's
-GTK3 widgetset. This confirms the executable starts but does not clear the
-GUI runtime-quality gate described above. Docker remains unavailable to this
-session because its daemon socket is not accessible.
+libgtk-3, libgdk-3, and libportaudio. A three-second Xvfb launch smoke test
+previously kept the application running, but emitted GTK critical messages from
+Lazarus 4.8's GTK3 widgetset. The new native-preview start path requires a
+real audio device and has not been opened by automated validation. Docker
+remains unavailable to this session because its daemon socket is not
+accessible.
 
 ## 23. References
 
