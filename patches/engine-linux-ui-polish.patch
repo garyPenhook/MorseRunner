@@ -1,7 +1,8 @@
 --- a/linux/Main.lfm
 +++ b/linux/Main.lfm
 @@ -3,11 +3,13 @@
-   Height = 544
+-  Height = 544
++  Height = 640
    Top = 156
    Width = 764
 -  BorderIcons = [biSystemMenu, biMinimize]
@@ -10,9 +11,10 @@
 +  BorderIcons = [biSystemMenu, biMinimize, biMaximize]
 +  BorderStyle = bsSizeable
 +  Caption = 'Morse Runner - Native Linux'
-   ClientHeight = 544
+-  ClientHeight = 544
++  ClientHeight = 640
    ClientWidth = 764
-+  Constraints.MinHeight = 544
++  Constraints.MinHeight = 640
 +  Constraints.MinWidth = 764
    Color = clBtnFace
    Font.Color = clWindowText
@@ -85,6 +87,39 @@
        Font.Color = clWindowText
        Font.Height = -13
        Font.Name = 'Monospace'
+@@ -567,8 +567,8 @@
+     object GroupBox3: TGroupBox
+       Left = 5
+       Height = 106
+-      Top = 248
++      Top = 295
+       Width = 196
+       Caption = ' Band Conditions '
+       ClientHeight = 77
+       ClientWidth = 186
+@@ -647,8 +647,8 @@
+     object GroupBox1: TGroupBox
+       Left = 5
+       Height = 186
+-      Top = 62
++      Top = 103
+       Width = 202
+       Caption = ' Station '
+       ClientHeight = 157
+       ClientWidth = 192
+@@ -867,8 +867,8 @@
+     object ContestGroup: TGroupBox
+       Left = 6
+-      Height = 50
++      Height = 91
+       Top = 5
+       Width = 195
+       Caption = 'Contest'
+-      ClientHeight = 21
++      ClientHeight = 62
+       ClientWidth = 185
+      ParentBackground = False
+      TabOrder = 3
 --- a/mac/Main.pas
 +++ b/mac/Main.pas
 @@ -240,6 +240,7 @@
@@ -121,7 +156,7 @@
  
    // Replace TToolBar/TToolButton with a color-capable TPanel button
    ToolBar1.Visible := False;
-@@ -1531,10 +1524,29 @@
+@@ -1531,12 +1524,38 @@ begin
  end;
  
  
@@ -131,6 +166,13 @@
 +  BottomRightWidth = 195;
 +begin
 +  if not Assigned(Panel1) then
++    Exit;
++
++  // FormCreate can run before GTK has assigned the bottom panel a client
++  // rectangle. Do not feed negative sizes into the widgetset during that
++  // initial allocation; OnResize will position the controls once it is live.
++  if (Panel1.ClientWidth <= 0) or
++     (Panel1.ClientHeight <= Panel2.Height + BottomRightMargin) then
 +    Exit;
 +
 +  // The bottom timer and score panels share the fixed-width control rail on
@@ -153,3 +195,71 @@
 -    Caption := 'Morse Runner - Community Edition';
 +    Caption := 'Morse Runner - Native Linux';
  end;
+ 
+ 
+--- a/linux/Main.lfm
++++ b/linux/Main.lfm
+@@ -843,32 +843,5 @@
+         TabOrder = 0
+         Value = 30
+       end
+-      object ToolBar1: TToolBar
+-        Left = 6
+-        Height = 29
+-        Top = 2
+-        Width = 97
+-        Align = alNone
+-        ButtonHeight = 30
+-        ButtonWidth = 72
+-        Caption = 'ToolBar1'
+-        Flat = False
+-        Indent = 3
+-        List = True
+-        ShowCaptions = True
+-        TabOrder = 1
+-        object ToolButton1: TToolButton
+-          Tag = 1
+-          Left = 3
+-          Top = 2
+-          AllowAllUp = True
+-          AutoSize = True
+-          Caption = '   Run   '
+-          DropdownMenu = PopupMenu1
+-          Grouped = True
+-          OnClick = RunBtnClick
+-          Style = tbsDropDown
+-        end
+-      end
+     end
+     object ContestGroup: TGroupBox
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -97,8 +97,6 @@ type
+         Label8: TLabel;
+         Label10: TLabel;
+         SpinEdit2: TSpinEdit;
+-        ToolBar1: TToolBar;
+-          ToolButton1: TToolButton;
+       ContestGroup: TGroupBox;
+         Label17: TLabel;
+         SimContestCombo: TComboBox;
+@@ -758,9 +756,6 @@ begin
+   Globals.GPaintBox1     := PaintBox1;
+   FormResize(Self);
+ 
+-  // Replace TToolBar/TToolButton with a color-capable TPanel button
+-  ToolBar1.Visible := False;
+-
+   RunPanelColor   := $0090EE90;  // light green
+   RunPanelCaption := 'Run';
+ 
+@@ -2167,9 +2162,6 @@ begin
+   EnableCtl(Edit4,           BStop);
+   EnableCtl(ExchangeEdit,    BStop and ActiveContest.ExchFieldEditable);
+   EnableCtl(SpinEdit2,       BStop);
+-  SetToolbuttonDown(ToolButton1, not BStop);
+-
+-  ToolButton1.Caption := IfThen(BStop, '   Run   ', '  Stop  ');
+   if Assigned(RunPanel) then
+   begin
+     RunPanelCaption := IfThen(BStop, 'Run', 'Stop');

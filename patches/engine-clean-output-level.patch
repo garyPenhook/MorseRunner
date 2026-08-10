@@ -1,0 +1,13 @@
+--- a/VCL/VolumCtl.pas
++++ b/VCL/VolumCtl.pas
+@@ -88,7 +88,9 @@ constructor TVolumeControl.Create(AOwner: TComponent);
+ begin
+   inherited Create(AOwner);
+ 
+-  FMaxOut := 20000;
++  // Leave a small digital headroom margin while making better use of the
++  // 16-bit output range. The PulseAudio backend normalises these samples.
++  FMaxOut := 30000;
+   FNoiseIn := 1;
+   FNoiseOut := 2000;
+   CalcBeta;

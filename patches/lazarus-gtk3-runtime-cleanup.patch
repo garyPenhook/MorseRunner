@@ -1,0 +1,78 @@
+diff --git a/lcl/interfaces/gtk3/gtk3object.inc b/lcl/interfaces/gtk3/gtk3object.inc
+--- a/lcl/interfaces/gtk3/gtk3object.inc
++++ b/lcl/interfaces/gtk3/gtk3object.inc
+@@ -492,7 +492,6 @@ begin
+     end else
+       DebugLn('TGtk3WidgetSet.Gtk3Destroy app Windows list ',dbgs(g_list_length(AList)));
+     {$ENDIF}
+-    FGtk3Application^.release;
+     FGtk3Application^.unref;
+     FGtk3Application := nil;
+   end;
+diff --git a/lcl/interfaces/gtk3/gtk3objects.pas b/lcl/interfaces/gtk3/gtk3objects.pas
+--- a/lcl/interfaces/gtk3/gtk3objects.pas
++++ b/lcl/interfaces/gtk3/gtk3objects.pas
+@@ -882,11 +882,22 @@ begin
+   inherited Create;
+   ACairo := gdk_cairo_create(gdk_get_default_root_window);
+   gdk_cairo_get_clip_rectangle(ACairo, @ARect);
+-  ASurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ARect.width, ARect.height);
+-  try
+-    FHandle := gdk_pixbuf_get_from_surface(ASurface, 0 ,0, ARect.Width, ARect.Height);
+-  finally
+-    cairo_surface_destroy(ASurface);
++  // A compositor can report an empty root-window clip during startup. GTK's
++  // gdk_pixbuf_get_from_surface rejects zero dimensions, so keep a valid
++  // transparent placeholder until a real drawable is available.
++  if (ARect.Width <= 0) or (ARect.Height <= 0) then
++  begin
++    FHandle := gdk_pixbuf_new(GDK_COLORSPACE_RGB, True, 8, 1, 1);
++    gdk_pixbuf_fill(FHandle, 0);
++  end
++  else
++  begin
++    ASurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ARect.width, ARect.height);
++    try
++      FHandle := gdk_pixbuf_get_from_surface(ASurface, 0 ,0, ARect.Width, ARect.Height);
++    finally
++      cairo_surface_destroy(ASurface);
++    end;
+   end;
+   FData := nil;
+   FDataOwner := False;
+diff --git a/lcl/interfaces/gtk3/gtk3widgets.pas b/lcl/interfaces/gtk3/gtk3widgets.pas
+--- a/lcl/interfaces/gtk3/gtk3widgets.pas
++++ b/lcl/interfaces/gtk3/gtk3widgets.pas
+@@ -6919,13 +6919,13 @@ begin
+     g_object_set_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.button), 'lclwidget', Self);
+     g_signal_connect_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.button), 'event', TGCallback(@Gtk3WidgetEvent), Self, nil, G_CONNECT_DEFAULT);
+   end;
++  // GTK 3.24 can expose popup_widget as an internal GtkCssCustomGadget rather
++  // than a GtkWidget. It has no "event" signal and must not be treated as a
++  // focusable/windowed widget. The container, button, area, and tree view
++  // registrations below still provide the LCL event routing we need.
+   if PGtkComboBox(GetContainerWidget)^.priv3^.popup_widget <> nil then
+   begin
+     g_object_set_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.popup_widget), 'lclwidget', Self);
+-    g_signal_connect_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.popup_widget), 'event', TGCallback(@Gtk3WidgetEvent), Self, nil, G_CONNECT_DEFAULT);
+-    PGtkComboBox(GetContainerWidget)^.priv3^.popup_widget^.set_has_window(True);
+-    PGtkComboBox(GetContainerWidget)^.priv3^.popup_widget^.set_can_focus(True);
+-    // g_signal_connect_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.popup_widget), 'map', TGCallback(@Gtk3ComboMenuRealized), Self, nil, 0);
+   end;
+   if PGtkComboBox(GetContainerWidget)^.priv3^.area <> nil then
+     g_object_set_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.area), 'lclwidget', Self);
+diff --git a/lcl/interfaces/gtk3/gtk3objects.pas b/lcl/interfaces/gtk3/gtk3objects.pas
+--- a/lcl/interfaces/gtk3/gtk3objects.pas
++++ b/lcl/interfaces/gtk3/gtk3objects.pas
+@@ -1508,6 +1508,12 @@ begin
+ 
+     ACairo := gdk_cairo_create(gdk_get_default_root_window);
+     gdk_cairo_get_clip_rectangle(ACairo, @ARect);
++    // A compositor may expose an empty root-window clip while the desktop is
++    // starting. Cairo and GdkPixbuf require strictly positive dimensions.
++    if ARect.width <= 0 then
++      ARect.width := 1;
++    if ARect.height <= 0 then
++      ARect.height := 1;
+     CairoSurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ARect.width, ARect.height);
+     pcr := cairo_create(CairoSurface);

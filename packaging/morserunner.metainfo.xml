@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>org.morserunner.MorseRunner</id>
+  <name>Morse Runner</name>
+  <summary>Native Linux CW contest simulator</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MPL-2.0</project_license>
+  <description>
+    <p>Practice CW contest pile-ups, single calls, WPX competition, and HST competition with a native Linux application.</p>
+  </description>
+  <launchable type="desktop-id">morserunner.desktop</launchable>
+  <url type="homepage">https://github.com/garyPenhook/MorseRunner</url>
+  <provides>
+    <binary>morserunner</binary>
+    <binary>morserunner-linux</binary>
+  </provides>
+  <categories>
+    <category>Education</category>
+    <category>HamRadio</category>
+  </categories>
+  <content_rating type="oars-1.1"/>
+</component>

@@ -17,7 +17,7 @@ application:
 ```sh
 git submodule update --init --recursive
 make linux-app
-./build/bin/morserunner-linux
+./build/bin/morserunner
 ```
 
 The repository includes the Free Pascal and Lazarus toolchain used by the
@@ -45,8 +45,25 @@ Or install for the current user without elevated privileges:
 make install PREFIX="$HOME/.local"
 ```
 
-This installs `morserunner-linux`, a freedesktop.org desktop entry, an icon,
-the contest data, and the full native engine.
+This installs `morserunner` (with `morserunner-linux` retained as an alias),
+a freedesktop.org desktop entry, an icon, the contest data, and the full
+native engine.
+
+### Release artifacts
+
+Build a Debian package and validate its extracted installation layout:
+
+```sh
+make deb-test
+```
+
+The result is `build/packages/morserunner-linux_1.6.0_amd64.deb`. Build the
+portable x86_64 AppImage (the build downloads the official appimagetool into
+the ignored `build/` directory):
+
+```sh
+make appimage-test
+```
 
 ## Data and diagnostics
 
