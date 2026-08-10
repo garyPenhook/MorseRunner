@@ -1,33 +1,67 @@
-                              MORSE RUNNER  1.68
+                         MORSE RUNNER — NATIVE LINUX PORT
 
                               Contest Simulator
 
-                                  freeware
+  This repository ports Morse Runner 1.68 to a native Linux application. It
+  retains the original Object Pascal simulation and Morse-audio behavior where
+  practical, while replacing the Windows/VCL and WinMM boundaries with Lazarus
+  LCL and PortAudio. Windows is not a supported target for this repository.
 
-               Copyright (C) 2004-2006 Alex Shovkoplyas, VE3NEA
-
-                      http://www.dxatlas.com/MorseRunner/
-
-
-
-
-PLATFORMS
-
-  - Windows 95/98/ME/NT4/2000/XP;
-  - works on Linux systems under WINE (info TNX F8BQQ).
+  The original application was written by Alex Shovkoplyas, VE3NEA:
+  http://www.dxatlas.com/MorseRunner/
 
 
+PORT STATUS
 
-INSTALLATION
+  The port is under active development. The current native Linux foundation
+  includes:
 
-  - run Setup.exe and follow the on-screen instructions.
+  - a GTK3 Lazarus smoke-test executable;
+  - headless settings, timing, logging/scoring, contest-session, PCM-ring,
+    legacy PCM conversion, and Morse-keyer core units;
+  - a PortAudio 19 output boundary that consumes preallocated PCM blocks; and
+  - direct Free Pascal and Lazarus test projects.
+
+  It is not yet a complete replacement for the historic application: station
+  simulation/DSP integration, full contest UI migration, actual playback-frame
+  clock reporting, recording, and Linux packaging are still in progress. The
+  current GUI timer is explicitly a prototype, not an audio clock.
 
 
+PLATFORM
 
-UNINSTALLATION
+  - Native Linux x86-64 is the supported development target.
+  - The application builds with Free Pascal 3.2.2, Lazarus 4.8, and the GTK3
+    widgetset.
+  - PortAudio 19 is the initial output backend, intended to work through the
+    host's PipeWire or PulseAudio compatibility layer.
+  - Wayland and X11 are release targets; GTK3 runtime validation is still
+    pending.
 
-  - click on Add/Remove Programs in the Windows Control Panel;
-  - select Morse Runner in the list of installed programs and click on Remove.
+
+BUILDING AND TESTING
+
+  The repository includes project-local toolchain support and wrapper targets:
+
+    make core-test
+    make lazarus-core-test
+    make linux-app
+
+  The first two compile and run the headless test suite. The last creates the
+  native GTK3 executable at:
+
+    build/bin/morserunner-linux
+
+  Development requires PortAudio 19 and GTK3 development files. See
+  LINUX_PORT_DESIGN.md for toolchain details, architecture decisions, current
+  validation status, and the remaining migration plan.
+
+
+CONFIGURATION NOTE
+
+  The configuration descriptions below are retained as historical behavior
+  documentation. The native port has not yet completed migration from the
+  legacy MorseRunner.ini model to Linux XDG configuration paths.
 
 
 
