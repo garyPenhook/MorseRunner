@@ -115,10 +115,41 @@ begin
   end;
 end;
 
+procedure TestSuperCheckPartial;
+var
+  FileName: string;
+  Lines: TStringList;
+  List: TCallList;
+begin
+  FileName := TestFileName('master.scp');
+  Lines := TStringList.Create;
+  try
+    Lines.Add('!!Order,1,1');
+    Lines.Add('# Super Check Partial fixture');
+    Lines.Add('ve3nea');
+    Lines.Add('P29SX');
+    Lines.Add('VE3NEA');
+    Lines.SaveToFile(FileName);
+  finally
+    Lines.Free;
+  end;
+
+  List := TCallList.Create;
+  try
+    List.Load(FileName);
+    Check(List.Count = 2, 'SCP duplicate calls are removed');
+    Check(List.Calls[1] = 'VE3NEA', 'SCP calls are normalized');
+  finally
+    List.Free;
+    DeleteFile(FileName);
+  end;
+end;
+
 begin
   try
     TestLoadAndPick;
     TestRejectsBadData;
+    TestSuperCheckPartial;
     WriteLn('Call list tests passed.');
   except
     on Error: Exception do

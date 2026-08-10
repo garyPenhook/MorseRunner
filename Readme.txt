@@ -64,10 +64,16 @@ BUILDING AND TESTING
   expanded before the queued message is keyed. This is a Morse-sender preview,
   not yet the original station/pile-up simulator.
 
-  The extracted call-list service accepts the legacy Master.dta format. Future
-  station simulation searches an explicitly configured file first, then
-  $XDG_DATA_HOME/morserunner/Master.dta (or ~/.local/share), the current
-  directory, and /usr/share/morserunner.
+  The extracted call-list service accepts legacy Master.dta and Super Check
+  Partial MASTER.SCP format. To install the current worldwide contest list in
+  your XDG data directory, run:
+
+    make update-call-list
+
+  The source file remains user-owned data rather than a repository snapshot.
+  Future station simulation searches an explicitly configured file first, then
+  $XDG_DATA_HOME/morserunner (or ~/.local/share), the current directory, and
+  /usr/share/morserunner.
 
   Development requires PortAudio 19 and GTK3 development files. See
   LINUX_PORT_DESIGN.md for toolchain details, architecture decisions, current

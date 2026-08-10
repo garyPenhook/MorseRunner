@@ -25,7 +25,9 @@ type
     constructor Create;
     destructor Destroy; override;
     procedure Clear;
+    procedure Load(const FileName: string);
     procedure LoadMasterDta(const FileName: string);
+    procedure LoadMasterScp(const FileName: string);
     function Pick(const Index: Integer): string;
 
     property Count: Integer read GetCount;
@@ -33,6 +35,7 @@ type
   end;
 
 function FindMasterDta(const ExplicitFileName: string = ''): string;
+function FindMasterScp(const ExplicitFileName: string = ''): string;
 
 implementation
 
@@ -79,6 +82,22 @@ begin
   Result := ExistingFile('/usr/share/morserunner/' + CALL_LIST_FILE_NAME);
 end;
 
+function FindMasterScp(const ExplicitFileName: string): string;
+begin
+  Result := ExistingFile(ExplicitFileName);
+  if Result <> '' then
+    Exit;
+  Result := ExistingFile(IncludeTrailingPathDelimiter(XdgDataHome) +
+    'morserunner' + PathDelim + 'MASTER.SCP');
+  if Result <> '' then
+    Exit;
+  Result := ExistingFile(IncludeTrailingPathDelimiter(GetCurrentDir) +
+    'MASTER.SCP');
+  if Result <> '' then
+    Exit;
+  Result := ExistingFile('/usr/share/morserunner/MASTER.SCP');
+end;
+
 constructor TCallList.Create;
 begin
   inherited Create;
@@ -96,6 +115,14 @@ end;
 procedure TCallList.Clear;
 begin
   FCalls.Clear;
+end;
+
+procedure TCallList.Load(const FileName: string);
+begin
+  if SameText(ExtractFileExt(FileName), '.scp') then
+    LoadMasterScp(FileName)
+  else
+    LoadMasterDta(FileName);
 end;
 
 function TCallList.GetCount: Integer;
@@ -176,6 +203,39 @@ begin
 
   if FCalls.Count = 0 then
     raise ECallList.Create('Master.dta contains no callsigns.');
+end;
+
+procedure TCallList.LoadMasterScp(const FileName: string);
+var
+  Lines: TStringList;
+  Index: Integer;
+  Entry: string;
+  Character: Char;
+begin
+  Clear;
+  if not FileExists(FileName) then
+    raise ECallList.CreateFmt('Call list "%s" does not exist.', [FileName]);
+
+  Lines := TStringList.Create;
+  try
+    Lines.LoadFromFile(FileName);
+    for Index := 0 to Lines.Count - 1 do
+    begin
+      Entry := UpperCase(Trim(Lines[Index]));
+      if (Entry = '') or (Entry[1] in ['#', '!']) then
+        Continue;
+      for Character in Entry do
+        if not (Character in LEGACY_CALL_CHARS) then
+          raise ECallList.CreateFmt('MASTER.SCP has an invalid callsign on line %d.',
+            [Index + 1]);
+      FCalls.Add(Entry);
+    end;
+  finally
+    Lines.Free;
+  end;
+
+  if FCalls.Count = 0 then
+    raise ECallList.Create('MASTER.SCP contains no callsigns.');
 end;
 
 function TCallList.Pick(const Index: Integer): string;

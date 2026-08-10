@@ -538,9 +538,12 @@ Verify the provenance and redistribution terms of the imported Master.dta
 before release.
 
 Current implementation: TCallList safely validates and reads the legacy index
-and NUL-delimited callsign payload into sorted, deduplicated Pascal strings.
-It follows the documented explicit/XDG/current-directory/system search order;
-the caller-engine integration is the next step.
+and NUL-delimited callsign payload into sorted, deduplicated Pascal strings. It
+also reads Super Check Partial's line-based MASTER.SCP format, and
+make update-call-list downloads the current contest list into the user's XDG
+data directory with basic format/count validation before atomic replacement.
+The source data is user-owned and is not committed as a repository snapshot.
+The caller-engine integration is the next step.
 
 ## 10. User Interface
 
