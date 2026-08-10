@@ -47,10 +47,11 @@ constructor TMorseToneRenderer.Create(const ASampleRate: Integer;
   const ACarrierHz: Single; const AAmplitude: Single);
 begin
   inherited Create;
-  FSampleRate := 11025;
-  FRequestedCarrierHz := 600;
-  FAmplitude := 6000;
-  SampleRate := ASampleRate;
+  if ASampleRate <= 0 then
+    raise EArgumentOutOfRangeException.Create('Carrier sample rate must be positive.');
+  FSampleRate := ASampleRate;
+  FRequestedCarrierHz := ACarrierHz;
+  FAmplitude := 0;
   RequestedCarrierHz := ACarrierHz;
   Amplitude := AAmplitude;
 end;
