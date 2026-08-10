@@ -21,6 +21,7 @@ BUILD_DIR := build
 CORE_UNIT_DIR := $(BUILD_DIR)/units
 CORE_BIN_DIR := $(BUILD_DIR)/bin
 CORE_SOURCE_DIR := src/core
+LINUX_SOURCE_DIR := src/linux
 
 .PHONY: check-toolchain core-test lazarus-core-test linux-app container-build container-test clean
 
@@ -41,6 +42,15 @@ core-test: check-toolchain
 	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
 		-o$(CORE_BIN_DIR)/pcm-ring-tests tests/PcmRingTests.lpr
 	$(CORE_BIN_DIR)/pcm-ring-tests
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/legacy-pcm-producer-tests tests/LegacyPcmProducerTests.lpr
+	$(CORE_BIN_DIR)/legacy-pcm-producer-tests
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/morse-keyer-tests tests/MorseKeyerTests.lpr
+	$(CORE_BIN_DIR)/morse-keyer-tests
+	$(FPC) -Mdelphi -Fu$(CORE_SOURCE_DIR) -Fu$(LINUX_SOURCE_DIR) -FU$(CORE_UNIT_DIR) \
+		-o$(CORE_BIN_DIR)/portaudio-output-tests tests/PortAudioOutputTests.lpr
+	$(CORE_BIN_DIR)/portaudio-output-tests
 
 lazarus-core-test: check-toolchain
 	mkdir -p $(CORE_UNIT_DIR) $(CORE_BIN_DIR)
@@ -52,6 +62,12 @@ lazarus-core-test: check-toolchain
 	$(CORE_BIN_DIR)/contest-session-tests
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/PcmRingTests.lpi
 	$(CORE_BIN_DIR)/pcm-ring-tests
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/LegacyPcmProducerTests.lpi
+	$(CORE_BIN_DIR)/legacy-pcm-producer-tests
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/MorseKeyerTests.lpi
+	$(CORE_BIN_DIR)/morse-keyer-tests
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/PortAudioOutputTests.lpi
+	$(CORE_BIN_DIR)/portaudio-output-tests
 
 linux-app: check-toolchain
 	mkdir -p $(CORE_UNIT_DIR) $(CORE_BIN_DIR)

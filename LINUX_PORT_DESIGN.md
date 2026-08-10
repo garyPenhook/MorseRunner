@@ -675,10 +675,10 @@ The current wrapper targets are:
     make linux-app
     make clean
 
-The first two compile and run the headless settings, QSO-log, and contest
-session, and PCM-ring tests. The Linux target compiles the GTK3 executable to
-build/bin/morserunner-linux. When the local toolchain exists, the Makefile
-selects it automatically.
+The first two compile and run the headless settings, QSO-log, contest-session,
+PCM-ring, legacy PCM-producer, Morse-keyer, and PortAudio callback tests. The
+Linux target compiles the GTK3 executable to build/bin/morserunner-linux. When
+the local toolchain exists, the Makefile selects it automatically.
 
 The underlying application build uses:
 
@@ -1092,26 +1092,54 @@ The first porting slice introduced:
 - A TPcmSpscRing with preallocated signed-16-bit blocks, a logical capacity of
   two or more producer blocks, atomic slot publication, full-ring rejection,
   and callback-safe silence on underrun. Reset remains an explicit
-  stopped-lifecycle operation; a PortAudio stream is not connected yet.
+  stopped-lifecycle operation.
 - Direct and Lazarus test coverage for ring ordering, wraparound, capacity,
   reset, and underrun accounting.
+- A UI-independent legacy PCM producer that preserves the original
+  TAlSoundOut conversion rule exactly: round each renderer Single sample, then
+  clamp it to the signed-16-bit range -32767..32767. It owns its preallocated
+  conversion scratch block and commits only PCM blocks to the ring.
+- Direct and Lazarus tests for clipping, rounding, block conversion/queueing,
+  and invalid producer block sizes.
+- A UI-independent Morse keyer derived from the legacy keyer/table code. It
+  retains the legacy 11,025 Hz, 5 ms Blackman-Harris envelope default and
+  block-padding calculation, while validating impossible timing parameters
+  before rendering. It exposes encoded Morse and rendered Single blocks
+  without global state, forms, Ini, or sound-device dependencies.
+- Direct and Lazarus tests for case-insensitive CQ encoding, word spacing,
+  a deterministic block-padded CQ envelope, and invalid timing rejection.
+- A narrow PortAudio 19 declaration and output owner. It owns exactly one
+  default mono signed-16-bit stream, pairs successful initialization with
+  termination, and uses no legacy global sound object.
+- The PortAudio callback reads only the preallocated PCM ring. It copies one
+  exact configured block or writes silence on underrun; unexpected callback
+  sizes are zero-filled, counted, and aborted without calling LCL, contest, or
+  PortAudio control APIs.
+- Direct and Lazarus tests link to the installed libportaudio, verify version
+  metadata without initializing a device, and exercise the callback-to-ring
+  transfer and its underrun/mismatched-size paths without opening audio.
 
 This is intentionally parallel to the Delphi/VCL application. It does not yet
 replace the legacy global settings, Log.pas, or WinMM audio path. The next
-slice should add a minimal, audited PortAudio declaration/output owner, connect
-its callback to this ring, and only then extract station/keyer/DSP dependencies
-behind a real UI-independent renderer. The prototype timer must be removed
-when audio playback provides consumed frames.
+slice should connect this keyer to the legacy carrier/modulator and contest
+station state behind a real UI-independent renderer, have it supply the
+producer's legacy Single blocks, and commit those blocks to this ring. The
+prototype timer must be removed only when the output callback reports actual
+played-frame progress to the session.
 
 ### Validation status (2026-08-10)
 
-The local FPC 3.2.2 install compiled and ran all three headless test
-executables through both direct FPC and Lazarus builds:
+The local FPC 3.2.2 install compiled and ran all seven headless test executables
+through both direct FPC and Lazarus builds:
 
 - settings/timing;
 - QSO log/scoring;
 - contest session lifecycle.
 - PCM SPSC ring behavior.
+- Legacy Single-to-PCM16 conversion and producer/ring handoff.
+- Morse encoding and deterministic keyer-envelope rendering.
+- PortAudio library linkage and callback/ring transfer without a physical
+  output device.
 
 The GTK3 LCL application also compiles to a 64-bit ELF binary that links
 libgtk-3 and libgdk-3. A three-second Xvfb launch smoke test kept the

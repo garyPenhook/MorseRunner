@@ -19,18 +19,23 @@ type
     function NextIndex(const Index: LongInt): LongInt; inline;
     function AtomicRead(var Value: LongInt): LongInt; inline;
     procedure AtomicWrite(var Target: LongInt; const Value: LongInt); inline;
+    function GetUnderrunCount: LongInt;
   public
     constructor Create(const BlockFrames, Capacity: Integer);
     procedure Reset;
     function TryWrite(const Samples: array of SmallInt): Boolean;
     function TryRead(var Samples: array of SmallInt): Boolean;
+    function TryReadToBuffer(const Destination: PSmallInt;
+      const SampleCount: Integer): Boolean;
     procedure ReadOrSilence(var Samples: array of SmallInt);
+    procedure ReadOrSilenceToBuffer(const Destination: PSmallInt;
+      const SampleCount: Integer);
     function AvailableToRead: Integer;
     function AvailableToWrite: Integer;
 
     property BlockFrames: Integer read FBlockFrames;
     property Capacity: Integer read FCapacity;
-    property UnderrunCount: LongInt read FUnderrunCount;
+    property UnderrunCount: LongInt read GetUnderrunCount;
   end;
 
 implementation
@@ -107,12 +112,21 @@ begin
 end;
 
 function TPcmSpscRing.TryRead(var Samples: array of SmallInt): Boolean;
+begin
+  if Length(Samples) <> FBlockFrames then
+    raise EArgumentException.Create('PCM read size does not match ring block size.');
+  Result := TryReadToBuffer(@Samples[0], Length(Samples));
+end;
+
+function TPcmSpscRing.TryReadToBuffer(const Destination: PSmallInt;
+  const SampleCount: Integer): Boolean;
 var
   ReadIndex: LongInt;
   WriteIndex: LongInt;
 begin
-  if Length(Samples) <> FBlockFrames then
-    raise EArgumentException.Create('PCM read size does not match ring block size.');
+  Result := (Destination <> nil) and (SampleCount = FBlockFrames);
+  if not Result then
+    Exit;
 
   ReadIndex := FReadIndex;
   WriteIndex := AtomicRead(FWriteIndex);
@@ -120,20 +134,27 @@ begin
   if not Result then
     Exit;
 
-  Move(FSlots[ReadIndex][0], Samples[0], FBlockFrames * SizeOf(SmallInt));
+  Move(FSlots[ReadIndex][0], Destination^, FBlockFrames * SizeOf(SmallInt));
   { Release the slot only after its data has been copied. }
   AtomicWrite(FReadIndex, NextIndex(ReadIndex));
 end;
 
 procedure TPcmSpscRing.ReadOrSilence(var Samples: array of SmallInt);
-var
-  Index: Integer;
 begin
-  if TryRead(Samples) then
+  if Length(Samples) <> FBlockFrames then
+    raise EArgumentException.Create('PCM read size does not match ring block size.');
+  ReadOrSilenceToBuffer(@Samples[0], Length(Samples));
+end;
+
+procedure TPcmSpscRing.ReadOrSilenceToBuffer(const Destination: PSmallInt;
+  const SampleCount: Integer);
+begin
+  if (Destination = nil) or (SampleCount <> FBlockFrames) then
+    Exit;
+  if TryReadToBuffer(Destination, SampleCount) then
     Exit;
 
-  for Index := 0 to High(Samples) do
-    Samples[Index] := 0;
+  FillChar(Destination^, FBlockFrames * SizeOf(SmallInt), 0);
   InterlockedIncrement(FUnderrunCount);
 end;
 
@@ -159,6 +180,11 @@ begin
   Result := ReadIndex - WriteIndex - 1;
   if Result < 0 then
     Inc(Result, FSlotCount);
+end;
+
+function TPcmSpscRing.GetUnderrunCount: LongInt;
+begin
+  Result := AtomicRead(FUnderrunCount);
 end;
 
 end.
