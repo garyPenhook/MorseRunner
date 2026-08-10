@@ -5,7 +5,9 @@ single calls, WPX competition, and HST competition. It runs as a Linux ELF
 application with a GTK3 interface and PulseAudio/PipeWire-compatible audio;
 it does not use Wine or Windows libraries.
 
-Linux port by Gary Scott, W4GNS.
+The production engine is based on the maintained WU6P native Linux/macOS port.
+This repository adds reviewed Linux integration overlays, packaging, and
+documentation around that engine.
 
 ## Build and run
 

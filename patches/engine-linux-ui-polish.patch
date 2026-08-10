@@ -81,7 +81,7 @@
 -      Width = 171
 -      Caption = 'Linux porting   Nian WU6P'
 +      Width = 260
-+      Caption = 'Linux port by Gary Scott, W4GNS'
++      Caption = 'Linux port by Nian WU6P'
        Font.Color = clWindowText
        Font.Height = -13
        Font.Name = 'Monospace'
