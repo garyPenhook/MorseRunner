@@ -78,9 +78,10 @@
 @@ -546,7 +551,7 @@
        Height = 16
        Top = 296
-       Width = 171
+-      Width = 171
 -      Caption = 'Linux porting   Nian WU6P'
-+      Caption = 'Native Linux build - WU6P port'
++      Width = 260
++      Caption = 'Linux port by Gary Scott, W4GNS'
        Font.Color = clWindowText
        Font.Height = -13
        Font.Name = 'Monospace'

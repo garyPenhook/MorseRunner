@@ -6,6 +6,8 @@ Last updated: 2026-08-10
 
 Target repository: https://github.com/garyPenhook/MorseRunner
 
+Linux port: Gary Scott, W4GNS
+
 License: Mozilla Public License 2.0
 
 ## 1. Summary
