@@ -37,6 +37,12 @@ repository's current `data/MASTER.SCP` call list over its legacy binary list.
 The smaller extracted core remains useful for focused tests and future
 refactoring, but it is no longer presented as the primary application.
 
+The launcher keeps normal terminal sessions quiet. GTK3/LCL widgetset and
+compositor diagnostics are appended to
+`$XDG_STATE_HOME/morserunner/gtk3-runtime.log` (or
+`~/.local/state/morserunner/gtk3-runtime.log`); set `MORSERUNNER_DEBUG=1` to
+send them to the terminal when diagnosing a desktop-specific issue.
+
 An existing Lazarus/PortAudio fork and the Debian morserunner package provide
 useful conversion work. Their forms, compiler fixes, call-list data, desktop
 integration, and packaging should be imported with attribution. Their

@@ -1,6 +1,20 @@
 #!/usr/bin/env sh
-# Launch the full native engine from its data directory.  It needs the bundled
+# Launch the full native engine from its data directory. It needs the bundled
 # contest and callsign files beside the executable, not beside this wrapper.
+#
+# Current Lazarus GTK3 releases can print harmless widget/compositor diagnostics
+# on some desktop themes. Keep normal launches quiet while retaining those
+# diagnostics in the XDG state directory. Set MORSERUNNER_DEBUG=1 to send them
+# to the terminal instead.
 set -eu
 ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
-exec "$ROOT_DIR/native/engine/MorseRunner" "$@"
+ENGINE="$ROOT_DIR/native/engine/MorseRunner"
+
+if [ "${MORSERUNNER_DEBUG:-}" = "1" ]; then
+  exec "$ENGINE" "$@"
+fi
+
+STATE_ROOT=${XDG_STATE_HOME:-"${HOME:-/tmp}/.local/state"}
+LOG_DIR="$STATE_ROOT/morserunner"
+mkdir -p "$LOG_DIR"
+exec "$ENGINE" "$@" 2>>"$LOG_DIR/gtk3-runtime.log"

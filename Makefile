@@ -29,6 +29,7 @@ ENGINE_AUDIO_SOURCE := $(ENGINE_DIR)/linux/VCL/AudioBackendPulse.c
 ENGINE_AUDIO_OBJECT := $(ENGINE_DIR)/linux/VCL/AudioBackendPulse.o
 ENGINE_BINARY := $(ENGINE_DIR)/MorseRunner
 ENGINE_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-scp-patch-applied
+ENGINE_UI_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-ui-patch-applied
 
 .PHONY: check-toolchain check-native-engine core-test lazarus-core-test linux-app preview-app audio-smoke-test update-call-list container-build container-test clean
 
@@ -112,7 +113,7 @@ check-native-engine:
 
 # The production Linux target is the full original Morse Runner engine and UI.
 # It is pinned in native/engine so upstream fixes can be reviewed deliberately.
-linux-app: check-toolchain check-native-engine $(ENGINE_PATCH_STAMP) $(CORE_BIN_DIR)/morserunner-linux
+linux-app: check-toolchain check-native-engine $(ENGINE_PATCH_STAMP) $(ENGINE_UI_PATCH_STAMP) $(CORE_BIN_DIR)/morserunner-linux
 	cp data/MASTER.SCP $(ENGINE_DIR)/MASTER.SCP
 	gcc -c $(ENGINE_AUDIO_SOURCE) -o $(ENGINE_AUDIO_OBJECT) -fPIC \
 		$$(pkg-config --cflags libpulse-simple) -O2
@@ -121,6 +122,10 @@ linux-app: check-toolchain check-native-engine $(ENGINE_PATCH_STAMP) $(CORE_BIN_
 
 $(ENGINE_PATCH_STAMP): patches/engine-load-master-scp.patch
 	cd $(ENGINE_DIR) && patch --batch -p1 < ../../patches/engine-load-master-scp.patch
+	touch $@
+
+$(ENGINE_UI_PATCH_STAMP): patches/engine-linux-ui-polish.patch
+	cd $(ENGINE_DIR) && patch --batch -p1 < ../../patches/engine-linux-ui-polish.patch
 	touch $@
 
 $(CORE_BIN_DIR)/morserunner-linux: scripts/morserunner-linux-launcher

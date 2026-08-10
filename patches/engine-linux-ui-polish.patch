@@ -1,0 +1,154 @@
+--- a/linux/Main.lfm
++++ b/linux/Main.lfm
+@@ -3,11 +3,13 @@
+   Height = 544
+   Top = 156
+   Width = 764
+-  BorderIcons = [biSystemMenu, biMinimize]
+-  BorderStyle = bsSingle
+-  Caption = 'Morse Runner'
++  BorderIcons = [biSystemMenu, biMinimize, biMaximize]
++  BorderStyle = bsSizeable
++  Caption = 'Morse Runner - Native Linux'
+   ClientHeight = 544
+   ClientWidth = 764
++  Constraints.MinHeight = 544
++  Constraints.MinWidth = 764
+   Color = clBtnFace
+   Font.Color = clWindowText
+   Font.Height = -12
+@@ -23,6 +25,7 @@
+   OnMouseWheelDown = FormMouseWheelDown
+   OnMouseWheelUp = FormMouseWheelUp
+   OnShow = FormShow
++  OnResize = FormResize
+   Position = poScreenCenter
+   LCLVersion = '3.7.0.0'
+   object Bevel1: TBevel
+@@ -357,7 +360,7 @@
+       Top = 54
+       Width = 550
+       Align = alClient
+-      Brush.Color = 16711401
++      Brush.Color = clWhite
+       Pen.Style = psClear
+     end
+     object Label14: TLabel
+@@ -366,22 +369,23 @@
+       Top = 61
+       Width = 313
+       Caption = 'Morse Runner 1.xx'
+-      Font.Color = 12369084
++      Font.Color = clSilver
++      Visible = False
+       Font.Height = -35
+       Font.Name = 'Sans'
+       Font.Style = [fsBold, fsItalic]
+       ParentFont = False
+     end
+     object Label12: TLabel
+-      Left = 95
+-      Height = 39
++      Left = 79
++      Height = 45
+       Top = 57
+-      Width = 313
++      Width = 390
+       Caption = 'Morse Runner 1.xx'
+-      Font.Color = clAqua
+-      Font.Height = -35
++      Font.Color = clNavy
++      Font.Height = -29
+       Font.Name = 'Sans'
+-      Font.Style = [fsBold, fsItalic]
++      Font.Style = [fsBold]
+       ParentFont = False
+     end
+     object Label13: TLabel
+@@ -390,7 +394,8 @@
+       Top = 56
+       Width = 313
+       Caption = 'Morse Runner 1.xx'
+-      Font.Color = clGreen
++      Font.Color = clSilver
++      Visible = False
+       Font.Height = -35
+       Font.Name = 'Sans'
+       Font.Style = [fsBold, fsItalic]
+@@ -546,7 +551,7 @@
+       Height = 16
+       Top = 296
+       Width = 171
+-      Caption = 'Linux porting   Nian WU6P'
++      Caption = 'Native Linux build - WU6P port'
+       Font.Color = clWindowText
+       Font.Height = -13
+       Font.Name = 'Monospace'
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -240,6 +240,7 @@
+     procedure FormShow(Sender: TObject);
+     procedure FormDestroy(Sender: TObject);
+     procedure FormClose(Sender: TObject; var Action: TCloseAction);
++    procedure FormResize(Sender: TObject);
+     procedure FormKeyPress(Sender: TObject; var Key: Char);
+     procedure FormKeyDown(Sender: TObject; var Key: Word; Shift: TShiftState);
+     procedure FormKeyUp(Sender: TObject; var Key: Word; Shift: TShiftState);
+@@ -706,7 +707,7 @@
+   Memo1.Font.Name := 'Consolas';
+   Memo1.Font.Size := 11;
+ 
+-  Self.Caption := 'Morse Runner - Community Edition';
++  Self.Caption := 'Morse Runner - Native Linux';
+   Label12.Caption := Format('Morse Runner %s ', [sVersion]);
+   Label13.Caption := Label12.Caption;
+   Label14.Caption := Label12.Caption;
+@@ -756,15 +757,7 @@
+   Globals.GSBar          := sbar;
+   Globals.GMemo1         := Memo1;
+   Globals.GPaintBox1     := PaintBox1;
+-  // Align Panel11 and Panel2 (timer) to mirror the right-panel (Panel9) margins:
+-  // Panel9 internal controls start at Left=6 inside Panel9 (x=552), end at ~x=753,
+-  // leaving ~11px right gap.  Match that here.
+-  Panel11.Left   := 558;
+-  Panel11.Width  := 195;
+-  Panel11.Top    := 33;
+-  Panel11.Height := 100;   // leaves ~12px gap at Panel1 bottom
+-  Panel2.Left    := 558;
+-  Panel2.Width   := 195;
++  FormResize(Self);
+ 
+   // Replace TToolBar/TToolButton with a color-capable TPanel button
+   ToolBar1.Visible := False;
+@@ -1531,10 +1524,29 @@
+ end;
+ 
+ 
++procedure TMainForm.FormResize(Sender: TObject);
++const
++  BottomRightMargin = 11;
++  BottomRightWidth = 195;
++begin
++  if not Assigned(Panel1) then
++    Exit;
++
++  // The bottom timer and score panels share the fixed-width control rail on
++  // the right. Keep that rail aligned when a user resizes the Linux window.
++  Panel2.Width := BottomRightWidth;
++  Panel2.Left := Panel1.ClientWidth - BottomRightWidth - BottomRightMargin;
++  Panel11.Width := BottomRightWidth;
++  Panel11.Left := Panel2.Left;
++  Panel11.Top := Panel2.Height;
++  Panel11.Height := Panel1.ClientHeight - Panel11.Top - BottomRightMargin;
++end;
++
++
+ procedure TMainForm.UpdateTitleBar;
+ begin
+   if (SimContest = scHst) and not HamName.IsEmpty then
+-    Caption := Format('Morse Runner - Community Edition:  %s', [HamName])
++    Caption := Format('Morse Runner - Native Linux:  %s', [HamName])
+   else
+-    Caption := 'Morse Runner - Community Edition';
++    Caption := 'Morse Runner - Native Linux';
+ end;

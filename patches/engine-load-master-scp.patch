@@ -1,6 +1,6 @@
 --- a/CallLst.pas
 +++ b/CallLst.pas
-@@ -40,0 +40,32 @@
+@@ -40,3 +40,35 @@
 +procedure LoadSuperCheckPartial(const FileName: string; const Calls: TStringList);
 +var
 +  Lines: TStringList;
@@ -33,9 +33,18 @@
 +  end;
 +end;
 +
-@@ -52,0 +85,1 @@
+ // reads callsigns from Master.dta file
+ procedure TCallList.LoadCallList;
+ const
+@@ -52,2 +84,3 @@
+   FileName: string;
 +  ScpFileName: string;
-@@ -60,0 +94,7 @@
+   FFileSize: integer;
+@@ -58,4 +91,11 @@
+ begin
+   Calls.Clear;
+-
++
 +  ScpFileName := {$ifdef FPC}GetDataPath.GetDataPath{$else}ExtractFilePath(ParamStr(0)){$endif} + 'MASTER.SCP';
 +  if FileExists(ScpFileName) then
 +  begin
@@ -43,3 +52,4 @@
 +    if Calls.Count > 0 then Exit;
 +  end;
 +
+   FileName := {$ifdef FPC}GetDataPath.GetDataPath{$else}ExtractFilePath(ParamStr(0)){$endif} + 'MASTER.DTA';
