@@ -67,8 +67,9 @@ BUILDING AND TESTING
   bundled worldwide contest list, calls it, and shows that caller on screen.
   To complete the current practice QSO: let the caller finish, transmit the
   prefilled "<his> <#>" exchange, wait for "R 599nnn", then transmit "TU".
-  The app sends its final TU and logs the verified QSO. This is the current
-  working practice loop, not the original pile-up simulator.
+  The app sends its final TU, logs the verified QSO, and calls the next
+  database station with the next serial number. This is the current working
+  practice loop, not the original pile-up simulator.
 
   The extracted call-list service accepts legacy Master.dta and Super Check
   Partial MASTER.SCP format. To install the current worldwide contest list in

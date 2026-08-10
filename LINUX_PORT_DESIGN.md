@@ -32,8 +32,8 @@ recording, and persistence.
 The current Linux build includes a deliberately narrow, tested single-caller
 practice loop. It selects a real callsign from the bundled Super Check Partial
 list, sends `DE <caller> <caller>`, accepts a transmitted `<his> <#>` exchange,
-answers with `R 599nnn`, and logs a verified QSO after `TU` or `TNX`. This is a
-working vertical slice, not a replacement for the original pile-up station
+answers with `R 599nnn`, logs a verified QSO after `TU` or `TNX`, and advances
+to the next database caller. This is a working vertical slice, not a replacement for the original pile-up station
 simulator; bringing that simulator across remains the next major porting task.
 
 An existing Lazarus/PortAudio fork and the Debian morserunner package provide

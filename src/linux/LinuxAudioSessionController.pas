@@ -28,6 +28,7 @@ type
     FSingleCaller: TSingleCallerPractice;
     FQueuedMessage: string;
     FReplyMessage: string;
+    FAdvanceSingleCaller: Boolean;
     FRepeatPreview: Boolean;
     FStatus: string;
     function GetSession: TContestSession;
@@ -36,6 +37,7 @@ type
     function GetCallListCount: Integer;
     procedure LoadCallList;
     procedure SelectPracticeCall;
+    procedure StartSingleCaller;
     procedure ProduceUntilRingFull;
     procedure CloseOutput(const AbortStream: Boolean);
   public
@@ -135,6 +137,15 @@ begin
     FPracticeCall := 'P29SX';
 end;
 
+procedure TLinuxAudioSessionController.StartSingleCaller;
+begin
+  SelectPracticeCall;
+  FreeAndNil(FSingleCaller);
+  FSingleCaller := TSingleCallerPractice.Create(FPracticeCall,
+    FSession.Log.Count + 1);
+  FQueuedMessage := FSingleCaller.Start;
+end;
+
 procedure TLinuxAudioSessionController.ProduceUntilRingFull;
 begin
   while FRing.AvailableToWrite > 0 do
@@ -150,6 +161,11 @@ begin
       begin
         FProducer.PrepareMessage(FReplyMessage);
         FReplyMessage := '';
+      end
+      else if FAdvanceSingleCaller then
+      begin
+        FAdvanceSingleCaller := False;
+        StartSingleCaller;
       end
       else if FRepeatPreview then
         FProducer.PrepareMessage(PreviewMessage)
@@ -181,6 +197,7 @@ begin
   FOutput := TPortAudioOutput.Create(FRing);
   FQueuedMessage := '';
   FReplyMessage := '';
+  FAdvanceSingleCaller := False;
   FreeAndNil(FSingleCaller);
   FRepeatPreview := False;
   FStatus := 'Audio idle: settings updated.';
@@ -208,18 +225,16 @@ begin
   FProducer.Reset;
   FQueuedMessage := '';
   FReplyMessage := '';
+  FAdvanceSingleCaller := False;
   FreeAndNil(FSingleCaller);
-  SelectPracticeCall;
   FRepeatPreview := Mode <> rmSingle;
   FSession.Start(Mode);
   try
     FOutput.Open(FSettings.Audio.SampleRate);
     if Mode = rmSingle then
-    begin
-      FSingleCaller := TSingleCallerPractice.Create(FPracticeCall,
-        FSession.Log.Count + 1);
-      FQueuedMessage := FSingleCaller.Start;
-    end;
+      StartSingleCaller
+    else
+      SelectPracticeCall;
     ProduceUntilRingFull;
     FOutput.Start;
     FStatus := Format(
@@ -237,6 +252,7 @@ begin
       FProducer.Reset;
       FQueuedMessage := '';
       FReplyMessage := '';
+      FAdvanceSingleCaller := False;
       FreeAndNil(FSingleCaller);
       FRepeatPreview := False;
       FStatus := 'Audio start failed: ' + Error.Message;
@@ -253,6 +269,7 @@ begin
   FRing.Reset;
   FQueuedMessage := '';
   FReplyMessage := '';
+  FAdvanceSingleCaller := False;
   FreeAndNil(FSingleCaller);
   FRepeatPreview := False;
   FStatus := 'Audio stopped.';
@@ -278,7 +295,10 @@ begin
   begin
     FReplyMessage := ReplyText;
     if CompletedQso.TrueCall <> '' then
+    begin
       FSession.SubmitQso(CompletedQso);
+      FAdvanceSingleCaller := True;
+    end;
   end;
   FRepeatPreview := False;
   if Assigned(FSingleCaller) then
