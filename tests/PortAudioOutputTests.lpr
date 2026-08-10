@@ -4,6 +4,8 @@ program PortAudioOutputTests;
 
 uses
   SysUtils,
+  ContestSettings,
+  ContestSession,
   PcmRing,
   PortAudioApi,
   PortAudioOutput;
@@ -57,6 +59,9 @@ begin
     Check(Ring.TryWrite(InputBlock), 'ring accepts callback input');
     Output.FillCallbackBuffer(@OutputBlock[0], 4);
     CheckBlock(InputBlock, OutputBlock, 'callback copies queued PCM');
+    CheckEquals(4, Output.PlayedFrames, 'callback reports played frames');
+    CheckEquals(4, Output.TakePlayedFrames, 'controller drains played frames');
+    CheckEquals(0, Output.TakePlayedFrames, 'drained frames are not repeated');
 
     OutputBlock[0] := 1;
     OutputBlock[1] := 1;
@@ -66,9 +71,43 @@ begin
     CheckEquals(0, OutputBlock[0], 'callback underrun emits silence');
     CheckEquals(0, OutputBlock[3], 'callback underrun clears full block');
     CheckEquals(1, Ring.UnderrunCount, 'callback underrun tracked');
+    CheckEquals(8, Output.PlayedFrames, 'underrun silence still advances playback');
+    CheckEquals(4, Output.TakePlayedFrames, 'underrun frames are reported once');
   finally
     Output.Free;
     Ring.Free;
+  end;
+end;
+
+procedure TestControllerAppliesPlayedFramesToSession;
+var
+  Settings: TContestSettings;
+  Session: TContestSession;
+  Ring: TPcmSpscRing;
+  Output: TPortAudioOutput;
+  InputBlock: TBlock4;
+  OutputBlock: TBlock4;
+begin
+  InputBlock[0] := 1;
+  InputBlock[1] := 1;
+  InputBlock[2] := 1;
+  InputBlock[3] := 1;
+  Settings := DefaultContestSettings;
+  Settings.Audio.SampleRate := 4;
+  Session := TContestSession.Create(Settings);
+  Ring := TPcmSpscRing.Create(4, 2);
+  Output := TPortAudioOutput.Create(Ring);
+  try
+    Session.Start(rmPileup);
+    Check(Ring.TryWrite(InputBlock), 'clock test input queued');
+    Output.FillCallbackBuffer(@OutputBlock[0], 4);
+    Session.ConsumeFrames(Output.TakePlayedFrames);
+    CheckEquals(4, Session.ConsumedFrames,
+      'controller advances session only from callback-reported frames');
+  finally
+    Output.Free;
+    Ring.Free;
+    Session.Free;
   end;
 end;
 
@@ -101,6 +140,7 @@ begin
     TestPortAudioLibraryMetadata;
     TestCallbackReadsRing;
     TestCallbackRejectsUnexpectedFrameSize;
+    TestControllerAppliesPlayedFramesToSession;
     WriteLn('PortAudio output tests passed.');
   except
     on Error: Exception do

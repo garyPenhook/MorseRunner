@@ -22,8 +22,12 @@ type
     FInitialized: Boolean;
     FSampleRate: Integer;
     FCallbackFormatErrors: LongInt;
+    FPlayedBlockCount: LongInt;
+    FUnreportedPlayedBlocks: LongInt;
     procedure CheckPortAudio(const ErrorCode: TPaError; const Operation: string);
     function GetCallbackFormatErrors: LongInt;
+    function GetPlayedFrames: Int64;
+    procedure ResetPlaybackStatistics;
   public
     constructor Create(const Ring: TPcmSpscRing);
     destructor Destroy; override;
@@ -34,10 +38,12 @@ type
     procedure Close;
     procedure FillCallbackBuffer(const Output: Pointer;
       const FrameCount: culong);
+    function TakePlayedFrames: Int64;
 
     property State: TPortAudioOutputState read FState;
     property SampleRate: Integer read FSampleRate;
     property CallbackFormatErrors: LongInt read GetCallbackFormatErrors;
+    property PlayedFrames: Int64 read GetPlayedFrames;
   end;
 
 function PortAudioOutputCallback(Input, Output: Pointer; FrameCount: culong;
@@ -53,6 +59,7 @@ begin
     raise EArgumentNilException.Create('PortAudio output requires a PCM ring.');
   FRing := Ring;
   FState := paosClosed;
+  ResetPlaybackStatistics;
 end;
 
 destructor TPortAudioOutput.Destroy;
@@ -97,6 +104,7 @@ begin
   end;
 
   FSampleRate := SampleRate;
+  ResetPlaybackStatistics;
   FState := paosOpened;
 end;
 
@@ -173,11 +181,35 @@ begin
   end;
 
   FRing.ReadOrSilenceToBuffer(PSmallInt(Output), FrameCount);
+  InterlockedIncrement(FPlayedBlockCount);
+  InterlockedIncrement(FUnreportedPlayedBlocks);
 end;
 
 function TPortAudioOutput.GetCallbackFormatErrors: LongInt;
 begin
   Result := InterlockedCompareExchange(FCallbackFormatErrors, 0, 0);
+end;
+
+procedure TPortAudioOutput.ResetPlaybackStatistics;
+begin
+  { Lifecycle operation: call only while no callback is active. }
+  InterlockedExchange(FPlayedBlockCount, 0);
+  InterlockedExchange(FUnreportedPlayedBlocks, 0);
+  InterlockedExchange(FCallbackFormatErrors, 0);
+end;
+
+function TPortAudioOutput.GetPlayedFrames: Int64;
+begin
+  Result := Int64(InterlockedCompareExchange(FPlayedBlockCount, 0, 0)) *
+    FRing.BlockFrames;
+end;
+
+function TPortAudioOutput.TakePlayedFrames: Int64;
+begin
+  { The controller drains this counter outside the callback, then applies the
+    result to TContestSession. This keeps contest state off the audio thread. }
+  Result := Int64(InterlockedExchange(FUnreportedPlayedBlocks, 0)) *
+    FRing.BlockFrames;
 end;
 
 function PortAudioOutputCallback(Input, Output: Pointer; FrameCount: culong;

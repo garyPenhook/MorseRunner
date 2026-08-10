@@ -289,7 +289,8 @@ The application will have these logical components:
 4. TPortAudioOutput
    - Owns PortAudio initialization, stream, callback, and teardown.
    - Consumes from the PCM ring.
-   - Tracks frames played, underruns, and callback errors.
+   - Atomically tracks frames handed to the device, underruns, and callback
+     errors; the controller drains frame deltas outside the callback.
 
 5. TWavRecorder
    - Receives rendered blocks from the producer.
@@ -421,6 +422,7 @@ The callback:
 2. Copies samples to PortAudio output.
 3. Releases the slot.
 4. Emits zero samples and increments an underrun counter if no slot is ready.
+5. Atomically publishes the completed block's frame count for the controller.
 
 The callback may not:
 
@@ -431,6 +433,11 @@ The callback may not:
 - Write to disk or standard output.
 - Raise an exception across the C callback boundary.
 - Call PortAudio control functions.
+
+The controller calls TakePlayedFrames outside the callback and passes that
+delta to TContestSession.ConsumeFrames. This makes audible playback, including
+intentional underrun silence, the only source of canonical session time without
+allowing the callback to touch contest state.
 
 ### 8.3 Start and stop lifecycle
 
@@ -1131,13 +1138,14 @@ The first porting slice introduced:
   PortAudio control APIs.
 - Direct and Lazarus tests link to the installed libportaudio, verify version
   metadata without initializing a device, and exercise the callback-to-ring
-  transfer and its underrun/mismatched-size paths without opening audio.
+  transfer, played-frame accounting, controller/session handoff, and
+  underrun/mismatched-size paths without opening audio.
 
 This is intentionally parallel to the Delphi/VCL application. It does not yet
 replace the legacy global settings, Log.pas, or WinMM audio path. The next
 slice should connect contest-station state and command handling to the
-producer, start/prefill the PortAudio stream, and report actual played frames
-from the output path to the session. The prototype timer must then be removed.
+producer, start/prefill the PortAudio stream, and replace the prototype timer
+with controller-driven TakePlayedFrames updates.
 
 ### Validation status (2026-08-10)
 
@@ -1152,8 +1160,8 @@ through both direct FPC and Lazarus builds:
 - Morse encoding and deterministic keyer-envelope rendering.
 - Legacy-quantized CW carrier rendering and phase continuity.
 - Keyer-to-carrier-to-PCM producer/ring handoff with bounded back-pressure.
-- PortAudio library linkage and callback/ring transfer without a physical
-  output device.
+- PortAudio callback frame accounting and controller-to-session clock handoff
+  without a physical output device.
 
 The GTK3 LCL application also compiles to a 64-bit ELF binary that links
 libgtk-3 and libgdk-3. A three-second Xvfb launch smoke test kept the
