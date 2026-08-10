@@ -24,8 +24,13 @@ CORE_UNIT_DIR := $(BUILD_DIR)/fpc-units
 CORE_BIN_DIR := $(BUILD_DIR)/bin
 CORE_SOURCE_DIR := src/core
 LINUX_SOURCE_DIR := src/linux
+ENGINE_DIR := native/engine
+ENGINE_AUDIO_SOURCE := $(ENGINE_DIR)/linux/VCL/AudioBackendPulse.c
+ENGINE_AUDIO_OBJECT := $(ENGINE_DIR)/linux/VCL/AudioBackendPulse.o
+ENGINE_BINARY := $(ENGINE_DIR)/MorseRunner
+ENGINE_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-scp-patch-applied
 
-.PHONY: check-toolchain core-test lazarus-core-test linux-app audio-smoke-test update-call-list container-build container-test clean
+.PHONY: check-toolchain check-native-engine core-test lazarus-core-test linux-app preview-app audio-smoke-test update-call-list container-build container-test clean
 
 check-toolchain:
 	FPC="$(FPC)" sh tools/check-fpc.sh
@@ -101,7 +106,29 @@ lazarus-core-test: check-toolchain
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) tests/PortAudioOutputTests.lpi
 	$(CORE_BIN_DIR)/portaudio-output-tests
 
-linux-app: check-toolchain
+check-native-engine:
+	@test -f $(ENGINE_DIR)/MorseRunner_linux.lpi || \
+		(echo "Native engine submodule is missing; run: git submodule update --init --recursive" >&2; exit 1)
+
+# The production Linux target is the full original Morse Runner engine and UI.
+# It is pinned in native/engine so upstream fixes can be reviewed deliberately.
+linux-app: check-toolchain check-native-engine $(ENGINE_PATCH_STAMP) $(CORE_BIN_DIR)/morserunner-linux
+	cp data/MASTER.SCP $(ENGINE_DIR)/MASTER.SCP
+	gcc -c $(ENGINE_AUDIO_SOURCE) -o $(ENGINE_AUDIO_OBJECT) -fPIC \
+		$$(pkg-config --cflags libpulse-simple) -O2
+	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) --build-all $(ENGINE_DIR)/MorseRunner_linux.lpi
+	cp $(ENGINE_DIR)/lib/x86_64-linux/MorseRunner $(ENGINE_BINARY)
+
+$(ENGINE_PATCH_STAMP): patches/engine-load-master-scp.patch
+	cd $(ENGINE_DIR) && patch --batch -p1 < ../../patches/engine-load-master-scp.patch
+	touch $@
+
+$(CORE_BIN_DIR)/morserunner-linux: scripts/morserunner-linux-launcher
+	mkdir -p $(CORE_BIN_DIR)
+	install -m 755 $< $@
+
+# Retained only for testing the new audio seam while the old engine is migrated.
+preview-app: check-toolchain
 	mkdir -p $(CORE_UNIT_DIR) $(CORE_BIN_DIR)
 	PATH="$(LOCAL_FPC_BIN_DIR):$$PATH" $(LAZBUILD) $(LAZBUILD_ARGS) MorseRunnerLinux.lpi
 

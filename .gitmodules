@@ -1,0 +1,4 @@
+[submodule "native/engine"]
+	path = native/engine
+	url = https://github.com/WU6P/MorseRunner-Linux-MacOS.git
+	ignore = dirty

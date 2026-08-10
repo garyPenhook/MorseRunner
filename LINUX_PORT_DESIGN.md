@@ -29,12 +29,13 @@ code to modify form controls directly. The port must first establish explicit
 boundaries between the user interface, simulation engine, audio transport,
 recording, and persistence.
 
-The current Linux build includes a deliberately narrow, tested single-caller
-practice loop. It selects a real callsign from the bundled Super Check Partial
-list, sends `DE <caller> <caller>`, accepts a transmitted `<his> <#>` exchange,
-answers with `R 599nnn`, logs a verified QSO after `TU` or `TNX`, and advances
-to the next database caller. This is a working vertical slice, not a replacement for the original pile-up station
-simulator; bringing that simulator across remains the next major porting task.
+The current Linux build is based on the maintained WU6P native Linux/macOS
+port, pinned as `native/engine`. It compiles and runs the original contest
+engine, station simulation, keyboard workflow, and Linux PulseAudio backend.
+At build time, a small, reviewed overlay makes the real engine prefer this
+repository's current `data/MASTER.SCP` call list over its legacy binary list.
+The smaller extracted core remains useful for focused tests and future
+refactoring, but it is no longer presented as the primary application.
 
 An existing Lazarus/PortAudio fork and the Debian morserunner package provide
 useful conversion work. Their forms, compiler fixes, call-list data, desktop

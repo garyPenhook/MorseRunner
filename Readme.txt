@@ -13,21 +13,20 @@
 
 PORT STATUS
 
-  The port is under active development. The current native Linux foundation
-  includes:
+  The port is under active development. The production Linux application is
+  the original contest engine and keyboard-first UI, built from the pinned
+  native/engine source module. It includes:
 
-  - a GTK3 Lazarus native-preview executable that plays through PortAudio and
-    includes a working, database-backed Single Calls practice exchange;
-  - headless settings/XDG persistence, timing, logging/scoring,
-    contest-session, PCM-ring, legacy PCM conversion, and Morse-keyer core
-    units;
-  - a PortAudio 19 output boundary that consumes preallocated PCM blocks; and
-  - direct Free Pascal and Lazarus test projects.
+  - the original Pile-Up, Single Calls, WPX, and HST simulation modes;
+  - DX station behavior, QRM, QRN, QSB, scoring, radio timing, and the
+    keyboard-first logging workflow;
+  - a GTK3 Lazarus UI and a native PulseAudio backend (which also works on
+    PipeWire's PulseAudio compatibility service); and
+  - direct Free Pascal and Lazarus test projects for extracted porting code.
 
-  It is not yet a complete replacement for the historic application: the
-  original multi-station simulation/DSP integration, full contest UI migration,
-  recording, and Linux packaging are still in progress. The GUI timer polls
-  callback-reported frames; it is not a simulation clock.
+  The Linux packaging and independent regression coverage remain in progress,
+  but the shipped application now runs the actual contest simulator rather
+  than a Morse playback demonstration.
 
 
 PLATFORM
@@ -47,30 +46,26 @@ BUILDING AND TESTING
 
     make core-test
     make lazarus-core-test
+    git submodule update --init --recursive
     make linux-app
     make audio-smoke-test
 
-  The first two compile and run the headless test suite. The last creates the
-  native GTK3 executable at:
+  The first two compile and run the headless test suite. The last builds the
+  full native application, then refreshes its launcher at:
 
     build/bin/morserunner-linux
 
   audio-smoke-test is opt-in: it opens the default PortAudio output device and
   plays a short block of silence to validate stream startup and callback sizing.
 
-  The current native window lets you set your callsign, CW speed, pitch, and
-  session duration before Start. Once running, enter text in the transmit field
-  and click "Transmit text"; <my>, <his>, and <#> message placeholders are
-  expanded before the queued message is keyed.
+  Start a contest from the Run menu, send using F1–F8 or the on-screen keyer
+  controls, then work stations in the Call/RST/Nr fields. This is the real
+  Morse Runner workflow, including the original station simulation.
 
-  In "Single-session preview", the application selects a callsign from the
-  bundled worldwide contest list, calls it, and shows that caller on screen.
-  To complete the current practice QSO: let the caller finish, transmit the
-  prefilled "<his> <#>" exchange, wait for "R 599nnn", then transmit "TU".
-  The app sends its final TU, logs the verified QSO, and calls the next
-  database station with the next serial number. Press Enter in the transmit
-  field instead of clicking the button if you prefer keyboard operation. This
-  is the current working practice loop, not the original pile-up simulator.
+  The bundled `data/MASTER.SCP` is copied into the native engine at build time
+  and preferred over its legacy `MASTER.DTA` list. It therefore supplies the
+  current worldwide contest-call database to the real simulator as well as to
+  the extracted testable core.
 
   The extracted call-list service accepts legacy Master.dta and Super Check
   Partial MASTER.SCP format. To install the current worldwide contest list in

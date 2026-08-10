@@ -1,0 +1,6 @@
+#!/usr/bin/env sh
+# Launch the full native engine from its data directory.  It needs the bundled
+# contest and callsign files beside the executable, not beside this wrapper.
+set -eu
+ROOT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")/../.." && pwd)
+exec "$ROOT_DIR/native/engine/MorseRunner" "$@"

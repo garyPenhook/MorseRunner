@@ -1,0 +1,45 @@
+--- a/CallLst.pas
++++ b/CallLst.pas
+@@ -40,0 +40,32 @@
++procedure LoadSuperCheckPartial(const FileName: string; const Calls: TStringList);
++var
++  Lines: TStringList;
++  Index: Integer;
++  CharacterIndex: Integer;
++  Call: string;
++  IsCall: Boolean;
++begin
++  Calls.Clear;
++  Lines := TStringList.Create;
++  try
++    Lines.LoadFromFile(FileName);
++    for Index := 0 to Lines.Count - 1 do
++    begin
++      Call := UpperCase(Trim(Lines[Index]));
++      if (Call = '') or (Call[1] in ['!', '#']) then
++        Continue;
++      IsCall := True;
++      for CharacterIndex := 1 to Length(Call) do
++        if not (Call[CharacterIndex] in ['A'..'Z', '0'..'9', '/']) then
++        begin
++          IsCall := False;
++          Break;
++        end;
++      if IsCall then
++        Calls.Add(Call);
++    end;
++  finally
++    Lines.Free;
++  end;
++end;
++
+@@ -52,0 +85,1 @@
++  ScpFileName: string;
+@@ -60,0 +94,7 @@
++  ScpFileName := {$ifdef FPC}GetDataPath.GetDataPath{$else}ExtractFilePath(ParamStr(0)){$endif} + 'MASTER.SCP';
++  if FileExists(ScpFileName) then
++  begin
++    LoadSuperCheckPartial(ScpFileName, Calls);
++    if Calls.Count > 0 then Exit;
++  end;
++
