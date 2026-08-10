@@ -33,6 +33,7 @@ type
     procedure Tick;
 
     property Session: TContestSession read GetSession;
+    property Settings: TContestSettings read FSettings;
     property Status: string read FStatus;
   end;
 

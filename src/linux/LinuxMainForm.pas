@@ -13,12 +13,14 @@ uses
   ExtCtrls,
   ContestSettings,
   ContestSession,
-  LinuxAudioSessionController;
+  LinuxAudioSessionController,
+  SettingsStore;
 
 type
   TMainForm = class(TForm)
   private
     FAudioController: TLinuxAudioSessionController;
+    FSettingsStore: TContestSettingsStore;
     FModeBox: TComboBox;
     FStartButton: TButton;
     FStopButton: TButton;
@@ -44,6 +46,7 @@ implementation
 constructor TMainForm.Create(TheOwner: TComponent);
 var
   Settings: TContestSettings;
+  ImportedLegacy: Boolean;
 begin
   inherited Create(TheOwner);
   Caption := 'MorseRunner Linux — native audio preview';
@@ -51,7 +54,8 @@ begin
   ClientWidth := 510;
   ClientHeight := 220;
 
-  Settings := DefaultContestSettings;
+  FSettingsStore := TContestSettingsStore.Create;
+  Settings := FSettingsStore.Load(ImportedLegacy);
   FAudioController := TLinuxAudioSessionController.Create(Settings);
 
   FModeBox := TComboBox.Create(Self);
@@ -111,7 +115,13 @@ end;
 
 destructor TMainForm.Destroy;
 begin
+  try
+    FSettingsStore.Save(FAudioController.Settings);
+  except
+    { Shutdown must still release the audio device when persistence fails. }
+  end;
   FAudioController.Free;
+  FSettingsStore.Free;
   inherited Destroy;
 end;
 

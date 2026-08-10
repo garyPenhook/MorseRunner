@@ -265,6 +265,12 @@ Use the standard XDG defaults when an environment variable is absent.
 On first launch, optionally import a legacy MorseRunner.ini found in the
 current directory or beside the executable. Never continue writing there.
 
+Current implementation: TContestSettingsStore writes typed settings to the
+XDG configuration location, normalizes values both before writing and after
+reading, and performs that legacy import only when no native configuration is
+present. The old Ini.pas globals remain in the historical VCL source tree and
+are not used by the Linux executable.
+
 ## 7. Runtime Architecture
 
 ### 7.1 Components
@@ -1077,6 +1083,15 @@ The first porting slice introduced:
 
 - A UI-independent ContestSettings unit with typed contest, band, and audio
   settings plus legacy-compatible normalization bounds.
+- A UI-independent TContestSettingsStore that persists the typed settings in
+  XDG_CONFIG_HOME/morserunner/config.ini (or ~/.config/morserunner/config.ini),
+  imports a discovered MorseRunner.ini only on first native launch, translates
+  the legacy pitch/bandwidth indexes and buffer-size exponent, and never
+  rewrites the old configuration file. The GTK startup loads this store and
+  saves its normalized settings during orderly shutdown.
+- Direct and Lazarus tests cover native-settings round trips, normalization,
+  legacy INI conversion, persistence of the import, and native-file precedence
+  after import.
 - A ContestTiming unit that makes the sample/frame clock explicit without
   depending on Ini, Main, or any LCL unit.
 - A standalone headless test executable for defaults, settings normalization,
@@ -1155,18 +1170,21 @@ The first porting slice introduced:
   mono PortAudio stream, verifies playback progress and fixed callback sizing,
   then stops and closes the stream. It is not a CI requirement.
 
-This is intentionally parallel to the Delphi/VCL application. It does not yet
-replace the legacy global settings, Log.pas, or WinMM audio path. The next
-slice should connect contest-station state and command handling to the preview
-producer, replace its temporary CQ loop, and validate the default-device start,
-stop, and error paths on real PipeWire and PulseAudio desktops.
+This is intentionally parallel to the Delphi/VCL application. The native
+executable now replaces its own configuration boundary, but does not yet
+replace the remaining legacy global settings in the historical VCL source,
+Log.pas, or the old WinMM audio path. The next slice should connect
+contest-station state and command handling to the preview producer, replace its
+temporary CQ loop, and validate the default-device start, stop, and error paths
+on real PipeWire and PulseAudio desktops.
 
 ### Validation status (2026-08-10)
 
-The local FPC 3.2.2 install compiled and ran all ten headless test executables
+The local FPC 3.2.2 install compiled and ran all eleven headless test executables
 through both direct FPC and Lazarus builds:
 
 - settings/timing;
+- XDG settings persistence and one-time legacy-INI import;
 - QSO log/scoring;
 - contest session lifecycle.
 - PCM SPSC ring behavior.

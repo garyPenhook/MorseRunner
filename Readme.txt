@@ -18,8 +18,9 @@ PORT STATUS
 
   - a GTK3 Lazarus native-preview executable that plays a default-device CQ
     loop through PortAudio;
-  - headless settings, timing, logging/scoring, contest-session, PCM-ring,
-    legacy PCM conversion, and Morse-keyer core units;
+  - headless settings/XDG persistence, timing, logging/scoring,
+    contest-session, PCM-ring, legacy PCM conversion, and Morse-keyer core
+    units;
   - a PortAudio 19 output boundary that consumes preallocated PCM blocks; and
   - direct Free Pascal and Lazarus test projects.
 
@@ -64,9 +65,18 @@ BUILDING AND TESTING
 
 CONFIGURATION NOTE
 
-  The configuration descriptions below are retained as historical behavior
-  documentation. The native port has not yet completed migration from the
-  legacy MorseRunner.ini model to Linux XDG configuration paths.
+  Native settings are stored in:
+
+    $XDG_CONFIG_HOME/morserunner/config.ini
+
+  When XDG_CONFIG_HOME is not set, this defaults to:
+
+    $HOME/.config/morserunner/config.ini
+
+  On first launch the port imports MorseRunner.ini from the working directory
+  or the executable directory when one is present, writes the normalized native
+  configuration, and never writes back to the legacy file. The configuration
+  descriptions below are retained as historical behavior documentation.
 
 
 
