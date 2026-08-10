@@ -1,0 +1,113 @@
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -1999,7 +1999,7 @@
+ procedure TMainForm.FirstTime1Click(Sender: TObject);
+ const
+   Msg = '                       First Time?' + #13 +
+-        'Welcome to Morse Runner Community Edition' + #13 + #13 +
++        'Welcome to Morse Runner Native Linux' + #13 + #13 +
+         'Initial Setup:' + #13 +
+         '1) Select the Contest you wish to operate.' + #13 +
+         '2) Type the exchange you wish to send.' + #13 +
+@@ -2010,11 +2010,11 @@
+         '7) Select the time limit.' + #13 +
+         '8) The Run button has a drop down.' + #13 +
+         '   - Pile up - Hit F1 to call CQ. Get ready for pileups!' + #13 +
+-        '   - Single Calls - Work one station at a time.' + #13 +
++        '   - Single Calls - The best place to start: work one station at a time.' + #13 +
+         'More detailed help is in the readme, but this gets you started.' + #13 +
+         'Have Fun!' + #13 + #13 +
+         'Please visit us at:' + #13 +
+-        '    https://www.github.com/w7sst/MorseRunner/#readme';
++        '    https://github.com/garyPenhook/MorseRunner';
+ begin
+   ShowMessage(Msg);
+ end;
+@@ -2026,7 +2026,7 @@
+         'Version %s' + #13#13 +
+         'Copyright '#169'2004-2016 Alex Shovkoplyas, VE3NEA' + #13 +
+         'Copyright '#169'2022-2025 Morse Runner Community Edition Contributors' + #13#13 +
+-        'https://www.github.com/w7sst/MorseRunner/#readme';
++        'https://github.com/garyPenhook/MorseRunner';
+ begin
+   ShowMessage(Format(Msg, [sVersion]));
+ end;
+@@ -2535,7 +2535,7 @@
+ 
+ procedure TMainForm.WebPage1Click(Sender: TObject);
+ begin
+-  OpenURL('https://www.github.com/w7sst/MorseRunner#readme');
++  OpenURL('https://github.com/garyPenhook/MorseRunner');
+ end;
+ 
+ 
+--- a/Readme.txt
++++ b/Readme.txt
+@@ -1,38 +1,40 @@
+-                                MORSE RUNNER
+-                              Contest Simulator
+-                                  freeware
++                           MORSE RUNNER - NATIVE LINUX
++                              CW Contest Simulator
+ 
+-                Version 1.85.3 - ARRL Sweepstakes Contest
+-            The sixth release of the Morse Runner Community Edition
++                     Native Linux port and contest trainer
+ 
+                Copyright (C) 2004-2016 Alex Shovkoplyas, VE3NEA
+                       http://www.dxatlas.com/MorseRunner/
+ 
+         Copyright (C) 2022-2025 Morse Runner Community Edition Contributors
+-                   https://www.github.com/w7sst/MorseRunner/
++                   https://github.com/garyPenhook/MorseRunner
+ 
+ 
+-JOIN OUR COMMUNITY
+-  You are invited to join our community effort.
+-  For more information on the Morse Runner Community Edition project,
+-  please visit https://github.com/w7sst/MorseRunner#readme.
+-  Feedback can be left in our discussions area.
+-
+-  You can also discuss or leave feedback at https://groups.io/g/MorseRunnerCE.
+-
+-PLATFORMS
+-  - Windows XP/7/8/10/11
+-  - Works on Linux systems under WINE (info TNX F8BQQ).
+-  - Works on Mac systems under WINE (use Win7 bottle) or Crossover (info TNX N3RTW).
+-
+-INSTALLATION
+-  Open the zip file, extract the folder to your DESKTOP, and run
+-  MorseRunner.exe within this folder. Do not add these files to
+-  a previous release folder, or place in a windows program directory
+-  as this causes errors.
+-
+-UNINSTALLATION
+-  - Delete MorseRunner directory.
++NATIVE LINUX
++  This build is a native Linux ELF application. It does not use Wine or any
++  Windows libraries. It runs through the desktop's PulseAudio or PipeWire
++  compatibility service.
++
++BUILD AND RUN
++  From the repository root:
++    make linux-app
++    ./build/bin/morserunner-linux
++
++  The launcher starts the full contest simulator and supplies the bundled
++  MASTER.SCP callsign data. Use Help > First Time Setup for a short guided
++  setup, then select Run > Single Calls for an introductory practice session.
++
++USER FILES AND DIAGNOSTICS
++  Settings, recordings, and HST results are stored under
++  $XDG_DATA_HOME/MorseRunner/ (normally ~/.local/share/MorseRunner/).
++  GTK3 desktop diagnostics, if any, are logged under
++  $XDG_STATE_HOME/morserunner/ (normally ~/.local/state/morserunner/).
++  Set MORSERUNNER_DEBUG=1 before launching to show those diagnostics in a
++  terminal.
++
++PROJECT
++  Source, issues, and Linux-port documentation:
++    https://github.com/garyPenhook/MorseRunner
+ 
+ CONFIGURATION
+   First time setup instructions can be found within the program under help.

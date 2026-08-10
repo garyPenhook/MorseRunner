@@ -43,6 +43,11 @@ compositor diagnostics are appended to
 `~/.local/state/morserunner/gtk3-runtime.log`); set `MORSERUNNER_DEBUG=1` to
 send them to the terminal when diagnosing a desktop-specific issue.
 
+The application's Help menu and bundled `Readme.txt` are treated as product
+documentation. Linux builds must describe the native `make linux-app` and
+`build/bin/morserunner-linux` workflow, XDG data locations, and the local
+repository rather than legacy Windows/Wine installation instructions.
+
 An existing Lazarus/PortAudio fork and the Debian morserunner package provide
 useful conversion work. Their forms, compiler fixes, call-list data, desktop
 integration, and packaging should be imported with attribution. Their
