@@ -684,9 +684,9 @@ The current wrapper targets are:
 
 The first two compile and run the headless settings, QSO-log, contest-session,
 PCM-ring, legacy PCM-producer, Morse-keyer, Morse-tone-renderer, Morse-audio
-producer, and PortAudio callback tests. The Linux target compiles the GTK3
-executable to build/bin/morserunner-linux. When the local toolchain exists, the
-Makefile selects it automatically.
+producer, Morse-message-template, and PortAudio callback tests. The Linux
+target compiles the GTK3 executable to build/bin/morserunner-linux. When the
+local toolchain exists, the Makefile selects it automatically.
 
 The underlying application build uses:
 
@@ -1130,6 +1130,12 @@ The first porting slice introduced:
   explicit rather than silently dropping pending samples.
 - Direct and Lazarus tests prove back-pressure pauses/resumes production,
   producer-frame accounting, serialization, cancellation, and reset behavior.
+- A UI-independent message-template expander derived from legacy station
+  transmission text. It resolves <my>, <his>, and <#> placeholders without
+  depending on global Ini, station objects, or UI controls; the native preview
+  now sends the configured callsign in its CQ message.
+- Direct and Lazarus tests cover mixed/repeated placeholders and invalid
+  exchange values.
 - A narrow PortAudio 19 declaration and output owner. It owns exactly one
   default mono signed-16-bit stream, pairs successful initialization with
   termination, and uses no legacy global sound object.
@@ -1150,7 +1156,7 @@ stop, and error paths on real PipeWire and PulseAudio desktops.
 
 ### Validation status (2026-08-10)
 
-The local FPC 3.2.2 install compiled and ran all nine headless test executables
+The local FPC 3.2.2 install compiled and ran all ten headless test executables
 through both direct FPC and Lazarus builds:
 
 - settings/timing;
@@ -1161,6 +1167,7 @@ through both direct FPC and Lazarus builds:
 - Morse encoding and deterministic keyer-envelope rendering.
 - Legacy-quantized CW carrier rendering and phase continuity.
 - Keyer-to-carrier-to-PCM producer/ring handoff with bounded back-pressure.
+- Legacy station-message placeholder expansion for native preview transmission.
 - PortAudio callback frame accounting and controller-to-session clock handoff
   without a physical output device.
 

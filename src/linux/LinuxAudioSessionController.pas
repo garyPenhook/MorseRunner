@@ -7,6 +7,7 @@ interface
 uses
   ContestSession,
   ContestSettings,
+  MorseMessageTemplate,
   MorseAudioProducer,
   PcmRing,
   PortAudioOutput;
@@ -21,6 +22,7 @@ type
     FOutput: TPortAudioOutput;
     FStatus: string;
     function GetSession: TContestSession;
+    function PreviewMessage: string;
     procedure ProduceUntilRingFull;
     procedure CloseOutput(const AbortStream: Boolean);
   public
@@ -72,12 +74,18 @@ begin
   Result := FSession;
 end;
 
+function TLinuxAudioSessionController.PreviewMessage: string;
+begin
+  Result := ExpandMorseMessageTemplate('CQ <my> TEST', FSettings.Callsign,
+    '', 599, 1);
+end;
+
 procedure TLinuxAudioSessionController.ProduceUntilRingFull;
 begin
   while FRing.AvailableToWrite > 0 do
   begin
     if not FProducer.HasPendingBlocks then
-      FProducer.PrepareMessage('CQ');
+      FProducer.PrepareMessage(PreviewMessage);
     if not FProducer.TryProduceNextBlock then
       Exit;
   end;
