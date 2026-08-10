@@ -68,8 +68,9 @@ BUILDING AND TESTING
   To complete the current practice QSO: let the caller finish, transmit the
   prefilled "<his> <#>" exchange, wait for "R 599nnn", then transmit "TU".
   The app sends its final TU, logs the verified QSO, and calls the next
-  database station with the next serial number. This is the current working
-  practice loop, not the original pile-up simulator.
+  database station with the next serial number. Press Enter in the transmit
+  field instead of clicking the button if you prefer keyboard operation. This
+  is the current working practice loop, not the original pile-up simulator.
 
   The extracted call-list service accepts legacy Master.dta and Super Check
   Partial MASTER.SCP format. To install the current worldwide contest list in

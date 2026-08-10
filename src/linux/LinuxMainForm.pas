@@ -11,6 +11,7 @@ uses
   Controls,
   StdCtrls,
   ExtCtrls,
+  LCLType,
   Spin,
   ContestSettings,
   ContestSession,
@@ -31,6 +32,8 @@ type
     FStartButton: TButton;
     FStopButton: TButton;
     FTransmitButton: TButton;
+    FPracticeGuideLabel: TLabel;
+    FLogLabel: TLabel;
     FStateLabel: TLabel;
     FClockLabel: TLabel;
     FAudioStatusLabel: TLabel;
@@ -38,6 +41,8 @@ type
     procedure StartButtonClick(Sender: TObject);
     procedure StopButtonClick(Sender: TObject);
     procedure TransmitButtonClick(Sender: TObject);
+    procedure TransmitEditKeyDown(Sender: TObject; var Key: Word;
+      Shift: TShiftState);
     procedure ClockTimerTick(Sender: TObject);
     procedure RefreshView;
     function SelectedMode: TRunMode;
@@ -61,7 +66,7 @@ begin
   Caption := 'MorseRunner Linux — native audio preview';
   Position := poScreenCenter;
   ClientWidth := 580;
-  ClientHeight := 320;
+  ClientHeight := 340;
 
   FSettingsStore := TContestSettingsStore.Create;
   Settings := FSettingsStore.Load(ImportedLegacy);
@@ -173,22 +178,36 @@ begin
   FTransmitButton.Caption := 'Transmit text';
   FTransmitButton.OnClick := TransmitButtonClick;
 
+  FTransmitEdit.OnKeyDown := TransmitEditKeyDown;
+
+  FPracticeGuideLabel := TLabel.Create(Self);
+  FPracticeGuideLabel.Parent := Self;
+  FPracticeGuideLabel.Left := 20;
+  FPracticeGuideLabel.Top := 136;
+  FPracticeGuideLabel.Width := 540;
+
   FStateLabel := TLabel.Create(Self);
   FStateLabel.Parent := Self;
   FStateLabel.Left := 20;
-  FStateLabel.Top := 155;
+  FStateLabel.Top := 166;
   FStateLabel.Width := 540;
 
   FClockLabel := TLabel.Create(Self);
   FClockLabel.Parent := Self;
   FClockLabel.Left := 20;
-  FClockLabel.Top := 185;
+  FClockLabel.Top := 196;
   FClockLabel.Width := 540;
 
   FAudioStatusLabel := TLabel.Create(Self);
   FAudioStatusLabel.Parent := Self;
   FAudioStatusLabel.Left := 20;
-  FAudioStatusLabel.Top := 225;
+  FLogLabel := TLabel.Create(Self);
+  FLogLabel.Parent := Self;
+  FLogLabel.Left := 20;
+  FLogLabel.Top := 222;
+  FLogLabel.Width := 540;
+
+  FAudioStatusLabel.Top := 252;
   FAudioStatusLabel.Width := 540;
   FAudioStatusLabel.WordWrap := True;
   FAudioStatusLabel.Caption := FAudioController.Status;
@@ -260,6 +279,16 @@ begin
   RefreshView;
 end;
 
+procedure TMainForm.TransmitEditKeyDown(Sender: TObject; var Key: Word;
+  Shift: TShiftState);
+begin
+  if Key = VK_RETURN then
+  begin
+    Key := 0;
+    TransmitButtonClick(Sender);
+  end;
+end;
+
 procedure TMainForm.StopButtonClick(Sender: TObject);
 begin
   FAudioController.Stop;
@@ -289,9 +318,22 @@ begin
     FStateLabel.Caption := FStateLabel.Caption + Format(
       '  Caller: %s (%d database calls)', [FAudioController.PracticeCall,
       FAudioController.CallListCount]);
+  if (FAudioController.Session.State = ssRunning) and
+     (FAudioController.Session.Settings.RunMode = rmSingle) then
+    FPracticeGuideLabel.Caption :=
+      'Single Calls: send <his> <#>, wait for R 599nnn, then send TU. Press Enter to transmit.'
+  else
+    FPracticeGuideLabel.Caption :=
+      'Use <my>, <his>, and <#> in transmitted text. Press Enter to transmit.';
   FClockLabel.Caption := Format('Playback clock: %.3f seconds, %d frames, %d QSO(s)',
     [FAudioController.Session.ElapsedSeconds,
     FAudioController.Session.ConsumedFrames, FAudioController.Session.Log.Count]);
+  if FAudioController.Session.Log.Count > 0 then
+    with FAudioController.Session.Log.Items[FAudioController.Session.Log.Count - 1] do
+      FLogLabel.Caption := Format('Last QSO: %s  %d%3.3d  %s',
+        [Call, Rst, Nr, Err])
+  else
+    FLogLabel.Caption := 'Last QSO: none';
   FAudioStatusLabel.Caption := FAudioController.Status;
   FStartButton.Enabled := FAudioController.Session.State <> ssRunning;
   FStopButton.Enabled := FAudioController.Session.State = ssRunning;
