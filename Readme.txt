@@ -17,7 +17,7 @@ PORT STATUS
   includes:
 
   - a GTK3 Lazarus native-preview executable that plays a default-device CQ
-    loop through PortAudio;
+    loop through PortAudio and can queue operator-entered Morse text;
   - headless settings/XDG persistence, timing, logging/scoring,
     contest-session, PCM-ring, legacy PCM conversion, and Morse-keyer core
     units;
@@ -57,6 +57,12 @@ BUILDING AND TESTING
 
   audio-smoke-test is opt-in: it opens the default PortAudio output device and
   plays a short block of silence to validate stream startup and callback sizing.
+
+  The current native window lets you set your callsign, CW speed, pitch, and
+  session duration before Start. Once running, enter text in the transmit field
+  and click "Transmit text"; <my>, <his>, and <#> message placeholders are
+  expanded before the queued message is keyed. This is a Morse-sender preview,
+  not yet the original station/pile-up simulator.
 
   Development requires PortAudio 19 and GTK3 development files. See
   LINUX_PORT_DESIGN.md for toolchain details, architecture decisions, current

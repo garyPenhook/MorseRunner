@@ -1112,8 +1112,11 @@ The first porting slice introduced:
 - A minimal Lazarus GTK3 executable that creates the first native Linux window
   and starts a default-device CQ preview through PortAudio. Its UI timer now
   polls and applies callback-reported playback frames; it no longer simulates
-  session time from wall-clock milliseconds. Device opening remains an
-  interactive hardware path that needs broader runtime validation.
+  session time from wall-clock milliseconds. It exposes persisted callsign,
+  WPM, pitch, and duration controls before start, and an in-session text field
+  that queues a placeholder-expanded Morse transmission after the current block
+  sequence. Device opening remains an interactive hardware path that needs
+  broader runtime validation.
 - A project-local FPC 3.2.2 and Lazarus 4.8/GTK3 toolchain, used because the
   system fpc command is unrelated to Free Pascal and system-wide installation
   requires interactive sudo credentials.
@@ -1175,8 +1178,9 @@ executable now replaces its own configuration boundary, but does not yet
 replace the remaining legacy global settings in the historical VCL source,
 Log.pas, or the old WinMM audio path. The next slice should connect
 contest-station state and command handling to the preview producer, replace its
-temporary CQ loop, and validate the default-device start, stop, and error paths
-on real PipeWire and PulseAudio desktops.
+temporary CQ-loop sender with the real station/pile-up engine, and validate the
+default-device start, stop, and error paths on real PipeWire and PulseAudio
+desktops.
 
 ### Validation status (2026-08-10)
 

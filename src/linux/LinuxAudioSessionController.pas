@@ -20,6 +20,8 @@ type
     FRing: TPcmSpscRing;
     FProducer: TMorseAudioProducer;
     FOutput: TPortAudioOutput;
+    FQueuedMessage: string;
+    FRepeatPreview: Boolean;
     FStatus: string;
     function GetSession: TContestSession;
     function PreviewMessage: string;
@@ -28,9 +30,11 @@ type
   public
     constructor Create(const Settings: TContestSettings);
     destructor Destroy; override;
+    procedure Configure(const Settings: TContestSettings);
     procedure Start(const Mode: TRunMode);
     procedure Stop;
     procedure Tick;
+    procedure QueueMessage(const TemplateText: string);
 
     property Session: TContestSession read GetSession;
     property Settings: TContestSettings read FSettings;
@@ -86,10 +90,43 @@ begin
   while FRing.AvailableToWrite > 0 do
   begin
     if not FProducer.HasPendingBlocks then
-      FProducer.PrepareMessage(PreviewMessage);
+    begin
+      if FQueuedMessage <> '' then
+      begin
+        FProducer.PrepareMessage(FQueuedMessage);
+        FQueuedMessage := '';
+      end
+      else if FRepeatPreview then
+        FProducer.PrepareMessage(PreviewMessage)
+      else
+        Exit;
+    end;
     if not FProducer.TryProduceNextBlock then
       Exit;
   end;
+end;
+
+procedure TLinuxAudioSessionController.Configure(const Settings: TContestSettings);
+begin
+  if FSession.State = ssRunning then
+    raise EInvalidOp.Create('Stop the audio session before changing its settings.');
+
+  CloseOutput(False);
+  FOutput.Free;
+  FProducer.Free;
+  FRing.Free;
+
+  FSettings := Settings;
+  NormalizeContestSettings(FSettings);
+  FSession.Configure(FSettings);
+  FRing := TPcmSpscRing.Create(FSettings.Audio.FramesPerBlock,
+    FSettings.Audio.RingBlockCount);
+  FProducer := TMorseAudioProducer.Create(FRing, FSettings.Wpm,
+    FSettings.Audio.SampleRate, FSettings.PitchHz, 6000);
+  FOutput := TPortAudioOutput.Create(FRing);
+  FQueuedMessage := '';
+  FRepeatPreview := False;
+  FStatus := 'Audio idle: settings updated.';
 end;
 
 procedure TLinuxAudioSessionController.CloseOutput(const AbortStream: Boolean);
@@ -112,6 +149,8 @@ begin
 
   FRing.Reset;
   FProducer.Reset;
+  FQueuedMessage := '';
+  FRepeatPreview := True;
   FSession.Start(Mode);
   try
     FOutput.Open(FSettings.Audio.SampleRate);
@@ -130,6 +169,8 @@ begin
       FSession.RequestStop;
       FRing.Reset;
       FProducer.Reset;
+      FQueuedMessage := '';
+      FRepeatPreview := False;
       FStatus := 'Audio start failed: ' + Error.Message;
       raise;
     end;
@@ -142,7 +183,26 @@ begin
   FSession.RequestStop;
   FProducer.Reset;
   FRing.Reset;
+  FQueuedMessage := '';
+  FRepeatPreview := False;
   FStatus := 'Audio stopped.';
+end;
+
+procedure TLinuxAudioSessionController.QueueMessage(const TemplateText: string);
+var
+  MessageText: string;
+begin
+  if FSession.State <> ssRunning then
+    raise EInvalidOp.Create('Start the audio session before transmitting.');
+
+  MessageText := Trim(TemplateText);
+  if MessageText = '' then
+    raise EArgumentException.Create('Enter text to transmit.');
+
+  FQueuedMessage := ExpandMorseMessageTemplate(MessageText, FSettings.Callsign,
+    '', 599, FSession.Log.Count + 1);
+  FRepeatPreview := False;
+  FStatus := 'Queued Morse transmission: ' + FQueuedMessage;
 end;
 
 procedure TLinuxAudioSessionController.Tick;
