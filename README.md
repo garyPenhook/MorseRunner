@@ -59,7 +59,7 @@ Build a Debian package and validate its extracted installation layout:
 make deb-test
 ```
 
-The result is `build/packages/morserunner-linux_1.85.3_amd64.deb`. Build the
+The result is `build/packages/morserunner-linux_1.85.4_amd64.deb`. Build the
 portable x86_64 AppImage. The build downloads pinned-checksum copies of
 `linuxdeploy` and `appimagetool`, then uses `linuxdeploy` to deploy the engine's
 shared-library dependencies before assembly. A changed upstream download fails
@@ -81,6 +81,15 @@ make container-release
 `make container-test` runs the core suite, production build, and Debian-package
 startup test in the same baseline image. Docker or a compatible container
 runtime is required for these two portability gates.
+
+## Multi-caller speed range
+
+For pile-up practice, set **Activity** to `2` or higher and use the two
+**Caller WPM range** fields in the Station panel. Every newly-created caller
+then receives an independent random whole-number speed from the inclusive
+range—for example, `26` through `35` WPM. The range is saved with your other
+settings. Set either endpoint to `0` to disable it; the existing Settings →
+CW Min/Max RX Speed behavior remains the fallback.
 
 ## Data and diagnostics
 

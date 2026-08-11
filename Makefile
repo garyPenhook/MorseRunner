@@ -28,7 +28,7 @@ DATADIR ?= $(PREFIX)/share/morserunner
 DESKTOPDIR ?= $(PREFIX)/share/applications
 ICONDIR ?= $(PREFIX)/share/icons/hicolor/128x128/apps
 METAINFODIR ?= $(PREFIX)/share/metainfo
-PACKAGE_VERSION ?= 1.85.3
+PACKAGE_VERSION ?= 1.85.4
 DEB_MAINTAINER ?= Gary Penhook <penhookcoder@gmail.com>
 DEB_ARCH ?= $(shell dpkg --print-architecture)
 
