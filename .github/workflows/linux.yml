@@ -1,0 +1,35 @@
+name: Linux build and package
+
+on:
+  push:
+    branches: [master]
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          submodules: recursive
+
+      - name: Install container runtime prerequisites
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y --no-install-recommends \
+            docker.io make
+
+      - name: Build and test against the portable glibc baseline
+        run: |
+          make container-test
+          make container-release
+
+      - name: Publish build artifacts
+        uses: actions/upload-artifact@65c4c4a1ddee5b72f698fdd19549f0f0fb45cf08 # v4.6.0
+        with:
+          name: morserunner-linux-amd64
+          path: |
+            build/packages/*.deb
+            build/packages/*.AppImage

@@ -1,0 +1,61 @@
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -584,11 +584,40 @@ begin
+     end;
+ end;
+ 
++procedure CopyExistingFile(const SourceFileName, DestinationFileName: string);
++var
++  SourceStream, DestinationStream: TFileStream;
++begin
++  if not FileExists(SourceFileName) then
++    Exit;
++
++  SourceStream := TFileStream.Create(SourceFileName, fmOpenRead or fmShareDenyWrite);
++  try
++    DestinationStream := TFileStream.Create(DestinationFileName, fmCreate);
++    try
++      DestinationStream.CopyFrom(SourceStream, 0);
++    finally
++      DestinationStream.Free;
++    end;
++  finally
++    SourceStream.Free;
++  end;
++end;
++
++
+ procedure ToIni;
+ var
+   SC: TSimContest;
+   KeyName: String;
++  ConfigFileName, TemporaryFileName: string;
++  IniFile: TIniFile;
+ begin
+-  with TIniFile.Create(GetDataPath.GetUserPath + 'MorseRunner.ini') do
++  ConfigFileName := GetDataPath.GetUserPath + 'MorseRunner.ini';
++  TemporaryFileName := ConfigFileName + '.new';
++  DeleteFile(TemporaryFileName);
++  try
++    CopyExistingFile(ConfigFileName, TemporaryFileName);
++    IniFile := TIniFile.Create(TemporaryFileName);
++    with IniFile do
+     try
+       WriteBool(SEC_SYS, 'ShowCallsignInfo', MainForm.mnuShowCallsignInfo.Checked);
+@@ -651,10 +672,17 @@ begin
+       WriteInteger(SEC_SET, 'ShowExchangeSummary', ShowExchangeSummary);
+       WriteInteger(SEC_SET, 'StationIdRate', StationIdRate);
+       WriteInteger(SEC_SET, 'SingleCallStartDelay', SingleCallStartDelay);
+-
++      UpdateFile;
+     finally
+       Free;
+     end;
++    if not RenameFile(TemporaryFileName, ConfigFileName) then
++      raise Exception.CreateFmt('Cannot replace settings file "%s".',
++        [ConfigFileName]);
++  except
++    DeleteFile(TemporaryFileName);
++    raise;
++  end;
+ end;

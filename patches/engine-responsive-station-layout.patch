@@ -1,0 +1,131 @@
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -326,7 +326,9 @@ type
+     UserExchangeDirty: boolean;
+     CWSpeedDirty: boolean;
+     RitLocal: integer;
++    StationLayoutBusy: Boolean;
+ 
+     procedure IniErrorMsg(const aMsg: string);
++    procedure LayoutStationControls;
+     function  CreateContest(AContestId: TSimContest): TContest;
+     procedure ConfigureExchangeFields;
+@@ -749,6 +751,7 @@ begin
+   VolumeSlider1.Db := 0;
+   VolumeSlider1.OnChange := VolumeSlider1Change;
+   VolumeSlider1.OnDblClick := VolumeSliderDblClick;
++  LayoutStationControls;
+ 
+   // Wire up Globals so simulation units can access UI without importing Main
+   Globals.GLabel3        := Label3;
+@@ -870,6 +873,7 @@ begin
+   // This guarantees a visible gap between Panel11's bottom and the window edge
+   // regardless of how GTK2 sized Panel1 at runtime.
+   Panel11.Height := Panel1.ClientHeight - Panel11.Top - 15;
++  LayoutStationControls;
+ end;
+ 
+ 
+@@ -1548,6 +1552,102 @@ begin
+   LayoutStationControls;
+ end;
+ 
++procedure TMainForm.LayoutStationControls;
++const
++  Margin = 12;
++  ColumnGap = 10;
++  RowGap = 8;
++var
++  LabelWidth, ValueLeft, ValueWidth, CheckWidth, RailWidth,
++    NeededClientWidth: Integer;
++  RowTop, RowHeight, GroupChrome, NeededPanelHeight: Integer;
++
++  function MaxLabelWidth: Integer;
++  begin
++    Result := Max(Label4.Width, Label5.Width);
++    Result := Max(Result, Label6.Width);
++    Result := Max(Result, Label7.Width);
++    Result := Max(Result, Label9.Width);
++    Result := Max(Result, Label18.Width);
++  end;
++
++  procedure PositionRow(const ALabel: TLabel; const AControl: TControl);
++  begin
++    ALabel.Left := Margin;
++    ALabel.Top := RowTop + (RowHeight - ALabel.Height) div 2;
++    AControl.Left := ValueLeft;
++    AControl.Top := RowTop + (RowHeight - AControl.Height) div 2;
++    Inc(RowTop, RowHeight + RowGap);
++  end;
++
++begin
++  if StationLayoutBusy or (not Assigned(VolumeSlider1)) or
++     (not GroupBox1.HandleAllocated) then
++    Exit;
++
++  StationLayoutBusy := True;
++  try
++    // GTK calculates control heights from the active theme and scale factor.
++    // Derive both columns and rows after the controls are realised so labels
++    // such as "RX Bandwidth" can never occupy the same space as their inputs.
++    LabelWidth := MaxLabelWidth;
++    ValueLeft := Margin + LabelWidth + ColumnGap;
++    ValueWidth := Max(120, Canvas.TextWidth('0000 Hz') + 42);
++    CheckWidth := Max(CheckBox1.Width, Canvas.TextWidth(CheckBox1.Caption) + 26);
++    RailWidth := Max(ValueLeft + ValueWidth + Margin,
++      ValueLeft + ValueWidth + ColumnGap + CheckWidth + Margin) + 10;
++
++    Panel9.Width := Max(350, RailWidth);
++    NeededClientWidth := Panel9.Width + 560;
++    Constraints.MinWidth := Max(Constraints.MinWidth, NeededClientWidth);
++    if ClientWidth < NeededClientWidth then
++      Width := Width + NeededClientWidth - ClientWidth;
++    GroupBox1.Width := Panel9.ClientWidth - 10;
++    GroupBox3.Width := GroupBox1.Width;
++    ContestGroup.Width := GroupBox1.Width;
++    SimContestCombo.Width := ContestGroup.ClientWidth - 16;
++    ExchangeEdit.Width := ContestGroup.ClientWidth - ExchangeEdit.Left - 10;
++
++    RowTop := 12;
++    RowHeight := Max(Edit4.Height, CheckBox1.Height);
++    Label4.Left := Margin;
++    Label4.Top := RowTop + (RowHeight - Label4.Height) div 2;
++    CheckBox1.Width := CheckWidth;
++    CheckBox1.Left := GroupBox1.ClientWidth - Margin - CheckWidth;
++    CheckBox1.Top := RowTop + (RowHeight - CheckBox1.Height) div 2;
++    Edit4.Left := ValueLeft;
++    Edit4.Top := RowTop + (RowHeight - Edit4.Height) div 2;
++    Edit4.Width := CheckBox1.Left - ColumnGap - Edit4.Left;
++    Inc(RowTop, RowHeight + RowGap);
++
++    SpinEdit1.Width := ValueWidth;
++    ComboBox1.Width := ValueWidth;
++    ComboBox2.Width := ValueWidth;
++    VolumeSlider1.Width := ValueWidth;
++
++    RowHeight := Max(SpinEdit1.Height, Label6.Height);
++    PositionRow(Label6, SpinEdit1);
++    Label5.Left := SpinEdit1.Left + SpinEdit1.Width + ColumnGap;
++    Label5.Top := SpinEdit1.Top + (SpinEdit1.Height - Label5.Height) div 2;
++
++    RowHeight := Max(ComboBox1.Height, Label7.Height);
++    PositionRow(Label7, ComboBox1);
++    RowHeight := Max(ComboBox2.Height, Label9.Height);
++    PositionRow(Label9, ComboBox2);
++    RowHeight := Max(VolumeSlider1.Height, Label18.Height);
++    PositionRow(Label18, VolumeSlider1);
++
++    GroupChrome := GroupBox1.Height - GroupBox1.ClientHeight;
++    GroupBox1.Height := RowTop - RowGap + Margin + GroupChrome;
++    GroupBox3.Top := GroupBox1.Top + GroupBox1.Height + RowGap;
++    NeededPanelHeight := GroupBox3.Top + GroupBox3.Height + Panel10.Height + Margin;
++    if Panel9.ClientHeight < NeededPanelHeight then
++      Height := Height + NeededPanelHeight - Panel9.ClientHeight;
++  finally
++    StationLayoutBusy := False;
++  end;
++end;
++
+ 
+ procedure TMainForm.UpdateTitleBar;
+ begin

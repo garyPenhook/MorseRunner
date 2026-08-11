@@ -1,0 +1,321 @@
+diff --git a/ACAG.pas b/ACAG.pas
+index 4bcf748..952f2fb 100644
+--- a/ACAG.pas
++++ b/ACAG.pas
+@@ -33,7 +33,7 @@ type
+     function PickStation(): integer; override;
+     procedure DropStation(id : integer); override;
+     function GetCall(id:integer): string; override;     // returns station callsign
+-    procedure GetExchange(id : integer; out station : TDxStation); override;
++    procedure GetExchange(id : integer; var station : TDxStation); override;
+ 
+     function getExch1(id:integer): string;    // returns RST (e.g. 5NN)
+     function getExch2(id:integer): string;    // return <city|gun|ku><power> (e.g. 1002H)
+@@ -212,7 +212,7 @@ begin
+   result := CallList.Items[id].Call;
+ end;
+ 
+-procedure TACAG.GetExchange(id : integer; out station : TDxStation);
++procedure TACAG.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(station.Operid);  // RST
+   station.Exch2 := getExch2(station.Operid);  // <city|gun|ku><power>
+@@ -239,4 +239,3 @@ begin
+ end;
+ 
+ end.
+-
+diff --git a/ALLJA.pas b/ALLJA.pas
+index f2a11ae..1e5f1a7 100644
+--- a/ALLJA.pas
++++ b/ALLJA.pas
+@@ -33,7 +33,7 @@ type
+     function PickStation(): integer; override;
+     procedure DropStation(id : integer); override;
+     function GetCall(id:integer): string; override;     // returns station callsign
+-    procedure GetExchange(id : integer; out station : TDxStation); override;
++    procedure GetExchange(id : integer; var station : TDxStation); override;
+ 
+     function getExch1(id:integer): string;    // returns RST (e.g. 5NN)
+     function getExch2(id:integer): string;    // return <pref><power> (e.g. 10H)
+@@ -211,7 +211,7 @@ begin
+   result := CallList.Items[id].Call;
+ end;
+ 
+-procedure TALLJA.GetExchange(id : integer; out station : TDxStation);
++procedure TALLJA.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(station.Operid);  // RST
+   station.Exch2 := getExch2(station.Operid);
+@@ -238,4 +238,3 @@ begin
+ end;
+ 
+ end.
+-
+diff --git a/ArrlDx.pas b/ArrlDx.pas
+index 95bd912..7648589 100644
+--- a/ArrlDx.pas
++++ b/ArrlDx.pas
+@@ -36,7 +36,7 @@ type
+     function PickStation(): integer; override;
+     procedure DropStation(id : integer); override;
+     function GetCall(id:integer): string; override;  // returns station callsign
+-    procedure GetExchange(id : integer; out station : TDxStation); override;
++    procedure GetExchange(id : integer; var station : TDxStation); override;
+ 
+     function getExch1(id:integer): string;    // returns default RST value
+     function getExch2(id:integer): string;    // returns State/Prov (US/Canada) or Power (DX)
+@@ -295,7 +295,7 @@ begin
+ end;
+ 
+ 
+-procedure TArrlDx.GetExchange(id : integer; out station : TDxStation);
++procedure TArrlDx.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(id);
+   station.Exch2 := getExch2(id);
+@@ -380,5 +380,3 @@ end;
+ 
+ end.
+ 
+-
+-
+diff --git a/ArrlFd.pas b/ArrlFd.pas
+index 5142a2d..66a31e2 100644
+--- a/ArrlFd.pas
++++ b/ArrlFd.pas
+@@ -65,7 +65,7 @@ public
+   function PickStation(): integer; override;
+   procedure DropStation(id : integer); override;
+   function GetCall(id : integer): string; override; // returns station callsign
+-  procedure GetExchange(id : integer; out station : TDxStation); override;
++  procedure GetExchange(id : integer; var station : TDxStation); override;
+ 
+   function getExch1(id:integer): string;    // returns station info (e.g. 3A)
+   function getExch2(id:integer): string;    // returns section info (e.g. OR)
+@@ -500,7 +500,7 @@ begin
+ end;
+ 
+ 
+-procedure TArrlFieldDay.GetExchange(id : integer; out station : TDxStation);
++procedure TArrlFieldDay.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(id);
+   station.Exch2 := getExch2(id);
+@@ -630,5 +630,3 @@ initialization
+ 
+ end.
+ 
+-
+-
+diff --git a/ArrlSS.pas b/ArrlSS.pas
+index 176b405..f58f8b4 100644
+--- a/ArrlSS.pas
++++ b/ArrlSS.pas
+@@ -46,7 +46,7 @@ public
+   function PickStation(): integer; override;
+   procedure DropStation(id : integer); override;
+   function GetCall(id : integer): string; override; // returns station callsign
+-  procedure GetExchange(id: integer; out station: TDxStation); override;
++  procedure GetExchange(id: integer; var station: TDxStation); override;
+ 
+   function FindCallRec(out ssrec: TSweepstakesCallRec; const ACall: string): Boolean;
+   procedure SendMsg(const AStn: TStation; const AMsg: TStationMessage); override;
+@@ -411,7 +411,7 @@ end;
+   Constructs the Exchange values for this station.
+   Overriden for complex exchanges.
+ }
+-procedure TSweepstakes.GetExchange(id : integer; out station : TDxStation);
++procedure TSweepstakes.GetExchange(id : integer; var station : TDxStation);
+ const
+   PrecedenceTbl: array[0..5] of string = ('A', 'B', 'U', 'Q', 'M', 'S');
+ {$ifdef FPC}var R: Single;{$endif}
+@@ -535,5 +535,3 @@ end;
+ 
+ end.
+ 
+-
+-
+diff --git a/CWOPS.pas b/CWOPS.pas
+index ee2b002..d2b9cf5 100644
+--- a/CWOPS.pas
++++ b/CWOPS.pas
+@@ -34,7 +34,7 @@ type
+     procedure DropStation(id : integer); override;
+     function GetCall(id : integer): string; override;
+     function FindCallRec(out outrec: TCWOPSRec; const ACall: string): Boolean;
+-    procedure GetExchange(id : integer; out station : TDxStation); override;
++    procedure GetExchange(id : integer; var station : TDxStation); override;
+     procedure SendMsg(const AStn: TStation; const AMsg: TStationMessage); override;
+     function GetStationInfo(const ACallsign: string) : string; override;
+     function ExtractMultiplier(Qso: PQso) : string; override;
+@@ -166,7 +166,7 @@ begin
+ end;
+ 
+ 
+-procedure TCWOPS.GetExchange(id : integer; out station : TDxStation);
++procedure TCWOPS.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.OpName := CWOPSList.Items[id].Exch1;
+   station.Exch1 := CWOPSList.Items[id].Exch1;
+@@ -289,5 +289,3 @@ end;
+ 
+ end.
+ 
+-
+-
+diff --git a/CWSST.pas b/CWSST.pas
+index 38ee015..f754ae1 100644
+--- a/CWSST.pas
++++ b/CWSST.pas
+@@ -33,7 +33,7 @@ type
+     procedure DropStation(id : integer); override;
+     function GetCall(id : integer): string; override;
+     function FindCallRec(out outrec: TCWSSTRec; const ACall: string): Boolean;
+-    procedure GetExchange(id : integer; out station : TDxStation); override;
++    procedure GetExchange(id : integer; var station : TDxStation); override;
+     procedure SendMsg(const AStn: TStation; const AMsg: TStationMessage); override;
+     procedure SendText(const AStn: TStation; const AMsg: string); override;
+     function GreetingAsText(const AStn: TStation) : string;
+@@ -170,7 +170,7 @@ begin
+ end;
+ 
+ 
+-procedure TCWSST.GetExchange(id : integer; out station : TDxStation);
++procedure TCWSST.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.OpName := CWSSTList.Items[id].Exch1;
+   station.Exch1 := CWSSTList.Items[id].Exch1;
+@@ -366,5 +366,3 @@ end;
+ 
+ end.
+ 
+-
+-
+diff --git a/Contest.pas b/Contest.pas
+index 2dd14d6..39c198e 100644
+--- a/Contest.pas
++++ b/Contest.pas
+@@ -52,7 +52,7 @@ type
+     function PickStation : integer; virtual; abstract;
+     procedure DropStation(id : integer); virtual; abstract;
+     function GetCall(id : integer) : string; virtual; abstract;
+-    procedure GetExchange(id : integer; out station : TDxStation); virtual; abstract;
++    procedure GetExchange(id : integer; var station : TDxStation); virtual; abstract;
+     function GetRandomSerialNR: Integer; virtual;
+     function GetStationInfo(const ACallsign : string) : string; virtual;
+     function PickCallOnly : string;
+@@ -1030,4 +1030,3 @@ end;
+ 
+ 
+ end.
+-
+diff --git a/CqWW.pas b/CqWW.pas
+index 113c06f..f569c5a 100644
+--- a/CqWW.pas
++++ b/CqWW.pas
+@@ -34,7 +34,7 @@ public
+   function PickStation(): integer; override;
+   procedure DropStation(id : integer); override;
+   function GetCall(id:integer): string; override;     // returns station callsign
+-  procedure GetExchange(id : integer; out station : TDxStation); override;
++  procedure GetExchange(id : integer; var station : TDxStation); override;
+ 
+   function getExch1(id:integer): string;    // returns RST (e.g. 5NN)
+   function getExch2(id:integer): string;    // returns section info (e.g. 3)
+@@ -273,7 +273,7 @@ begin
+ end;
+ 
+ 
+-procedure TCqWw.GetExchange(id : integer; out station : TDxStation);
++procedure TCqWw.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(station.Operid);  // RST
+   station.Exch2 := getExch2(station.Operid);
+@@ -333,4 +333,3 @@ end;
+ end.
+ 
+ 
+-
+diff --git a/CqWpx.pas b/CqWpx.pas
+index 31e9a9c..8eaa946 100644
+--- a/CqWpx.pas
++++ b/CqWpx.pas
+@@ -35,7 +35,7 @@ public
+   function PickStation(): integer; override;
+   procedure DropStation(id : integer); override;
+   function GetCall(id:integer): string; override;     // returns station callsign
+-  procedure GetExchange(id : integer; out station : TDxStation); override;
++  procedure GetExchange(id : integer; var station : TDxStation); override;
+   function GetRandomSerialNR: Integer; override;
+ 
+   function getExch1(id:integer): string;    // returns RST (e.g. 5NN)
+@@ -296,7 +296,7 @@ begin
+ end;
+ 
+ 
+-procedure TCqWpx.GetExchange(id : integer; out station : TDxStation);
++procedure TCqWpx.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(station.Operid);  // RST
+   station.NR := GetNR(station);               // serial number
+@@ -335,4 +335,3 @@ end;
+ end.
+ 
+ 
+-
+diff --git a/IaruHf.pas b/IaruHf.pas
+index bd139c4..107c459 100644
+--- a/IaruHf.pas
++++ b/IaruHf.pas
+@@ -34,7 +34,7 @@ type
+     function PickStation(): integer; override;
+     procedure DropStation(id : integer); override;
+     function GetCall(id:integer): string; override;  // returns station callsign
+-    procedure GetExchange(id : integer; out station : TDxStation); override;
++    procedure GetExchange(id : integer; var station : TDxStation); override;
+ 
+     function getExch1(id:integer): string;    // returns default RST value
+     function getExch2(id:integer): string;    // returns Society (Headquarters, etc) or ITU Zone (others)
+@@ -284,7 +284,7 @@ begin
+ end;
+ 
+ 
+-procedure TIaruHf.GetExchange(id : integer; out station : TDxStation);
++procedure TIaruHf.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(id);
+   station.Exch2 := getExch2(id);
+@@ -389,5 +389,3 @@ end;
+ 
+ end.
+ 
+-
+-
+diff --git a/NaQp.pas b/NaQp.pas
+index 847dc54..8358c18 100644
+--- a/NaQp.pas
++++ b/NaQp.pas
+@@ -38,7 +38,7 @@ public
+   function PickStation(): integer; override;
+   procedure DropStation(id : integer); override;
+   function GetCall(id : integer): string; override; // returns station callsign
+-  procedure GetExchange(id : integer; out station : TDxStation); override;
++  procedure GetExchange(id : integer; var station : TDxStation); override;
+   function ExtractMultiplier(Qso: PQso) : string; override;
+   function IsCallLocalToContest(const ACallsign: string) : boolean; {$ifdef FPC}override;{$endif}
+ 
+@@ -428,7 +428,7 @@ begin
+ end;
+ 
+ 
+-procedure TNcjNaQp.GetExchange(id : integer; out station : TDxStation);
++procedure TNcjNaQp.GetExchange(id : integer; var station : TDxStation);
+ begin
+   station.Exch1 := getExch1(station.Operid);
+   station.OpName := station.Exch1; // TODO - refactor etOpName to use Exch1
+@@ -483,4 +483,3 @@ end;
+ end.
+ 
+ 
+-

@@ -1,0 +1,106 @@
+diff --git a/ExchFields.pas b/ExchFields.pas
+index 5ddac42..776391c 100644
+--- a/ExchFields.pas
++++ b/ExchFields.pas
+@@ -14,10 +14,11 @@ uses
+ 
+ type
+   // Exchange Field #1 types
+-  TExchange1Type = (etRST, etOpName, etFdClass, etSSNrPrecedence);
++  TExchange1Type = (etNoExch1, etRST, etOpName, etFdClass,
++                    etSSNrPrecedence);
+ 
+   // Exchange Field #2 Types
+-  TExchange2Type = (etSerialNr, etGenericField, etArrlSection, etStateProv,
++  TExchange2Type = (etNoExch2, etSerialNr, etGenericField, etArrlSection, etStateProv,
+                     etCqZone, etItuZone, etAge, etPower, etJaPref, etJaCity,
+                     etNaQpExch2, etNaQpNonNaExch2, etSSCheckSection);
+ 
+@@ -51,7 +52,8 @@ const
+   // Adding a contest: define contest-specific field types
+   // Exchange Field 1 settings/rules
+   Exchange1Settings: array[TExchange1Type] of TFieldDefinition = (
+-    (C: 'RST';   R: '[1-5E][1-9N][1-9N]';     L: 3;   T:Ord(etRST))
++    (C: '';      R: '';                        L: 0;   T:Ord(etNoExch1))
++   ,(C: 'RST';   R: '[1-5E][1-9N][1-9N]';     L: 3;   T:Ord(etRST))
+    ,(C: 'Name';  R: '[A-Z][A-Z]*';            L: 10;  T:Ord(etOpName))
+    ,(C: 'Class'; R: '[1-9][0-9]*[A-F]';       L: 3;   T:Ord(etFdClass))
+    // ARRL SS does not parse user-entered Exchange 1 field; Exchange 2 field is used.
+@@ -60,6 +62,7 @@ const
+ 
+   // Exchange Field 2 settings/rules
+   Exchange2Settings: array[TExchange2Type] of TFieldDefinition = (
++    (C: '';           R: '';                               L: 0;  T:Ord(etNoExch2)),
+     (C: 'Nr.';        R: '([0-9OTN]+)|(#)';                L: 4;  T:Ord(etSerialNr)),
+     (C: 'Exch';       R: '[0-9A-Z]*';                      L: 12; T:Ord(etGenericField)),
+     (C: 'Section';    R: '([A-Z][A-Z])|([A-Z][A-Z][A-Z])'; L: 3;  T:Ord(etArrlSection)),
+diff --git a/QrnStn.pas b/QrnStn.pas
+index ff8b5a4..097a5a8 100644
+--- a/QrnStn.pas
++++ b/QrnStn.pas
+@@ -33,8 +33,8 @@ begin
+   inherited Create(nil);
+ 
+   // QrnStation doesn't send messages, so no call nor exchange types
+-  SentExchTypes.Exch1:= TExchange1Type(-1);
+-  SentExchTypes.Exch2:= TExchange2Type(-1);
++  SentExchTypes.Exch1 := etNoExch1;
++  SentExchTypes.Exch2 := etNoExch2;
+ 
+   Dur := SecondsToBlocks(Random) * Ini.BufSize;
+   SetLength(Envelope, Dur);
+@@ -52,4 +52,3 @@ begin
+ end;
+ 
+ end.
+-
+diff --git a/Station.pas b/Station.pas
+index 6269e2a..e15c5b3 100644
+--- a/Station.pas
++++ b/Station.pas
+@@ -129,8 +129,8 @@ var
+ {$else}
+ const
+   ExchTypesUndef : TExchTypes = (
+-    Exch1: TExchange1Type(-1);
+-    Exch2: TExchange2Type(-1);
++    Exch1: etNoExch1;
++    Exch2: etNoExch2;
+   );
+ {$endif}
+ 
+@@ -521,4 +521,3 @@ initialization
+ {$endif}
+ 
+ end.
+-
+diff --git a/Util/SSExchParser.pas b/Util/SSExchParser.pas
+index d7ccd00..dd5b31a 100644
+--- a/Util/SSExchParser.pas
++++ b/Util/SSExchParser.pas
+@@ -11,6 +11,7 @@ uses
+ 
+ type
+   TExchTokenType = (
++    ttInvalid,  // cleared/uninitialized token
+     ttEOS,      // End of String token
+     ttDigit1,   // numeric token, 1-digit
+     ttDigit2,   // numeric token, 2-digit
+@@ -158,7 +159,7 @@ end;
+ 
+ procedure TSSExchToken.Clear;
+ begin
+-  TokenType := TExchTokenType(-1);
++  TokenType := ttInvalid;
+   Value := '';
+   Pos := -1;
+   assert(not IsValid);
+@@ -181,7 +182,7 @@ end;
+ 
+ function TSSExchToken.IsValid: Boolean;
+ begin
+-  Result := TokenType <> TExchTokenType(-1);
++  Result := TokenType <> ttInvalid;
+ end;
+ 
+ constructor TSSLexer.Create;

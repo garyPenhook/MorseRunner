@@ -3,7 +3,7 @@ Version: @VERSION@
 Section: hamradio
 Priority: optional
 Architecture: @ARCH@
-Maintainer: Morse Runner Linux maintainers <maintainers@invalid>
+Maintainer: @MAINTAINER@
 Depends: libgtk-3-0, libpulse0
 Description: Native Linux CW contest simulator
  Morse Runner simulates CW contest pile-ups, single calls, WPX competition,

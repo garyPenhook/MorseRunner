@@ -232,9 +232,10 @@ end;
 
 procedure TContestSettingsStore.Save(const Settings: TContestSettings);
 var
-  Ini: TIniFile;
+  Ini: TMemIniFile;
   NormalizedSettings: TContestSettings;
   ConfigDirectory: string;
+  TemporaryFileName: string;
 begin
   NormalizedSettings := Settings;
   NormalizeContestSettings(NormalizedSettings);
@@ -243,7 +244,12 @@ begin
     raise Exception.CreateFmt('Cannot create configuration directory "%s".',
       [ConfigDirectory]);
 
-  Ini := TIniFile.Create(FConfigFileName);
+  // Never rewrite the live configuration in place. A complete same-directory
+  // temporary file can be atomically renamed on POSIX filesystems, so a crash
+  // leaves either the old valid settings or the new valid settings.
+  TemporaryFileName := FConfigFileName + '.new';
+  DeleteFile(TemporaryFileName);
+  Ini := TMemIniFile.Create(TemporaryFileName);
   try
     Ini.WriteString(SECTION_STATION, 'Callsign', NormalizedSettings.Callsign);
     Ini.WriteString(SECTION_STATION, 'Name', NormalizedSettings.HamName);
@@ -281,6 +287,13 @@ begin
     Ini.UpdateFile;
   finally
     Ini.Free;
+  end;
+
+  if not RenameFile(TemporaryFileName, FConfigFileName) then
+  begin
+    DeleteFile(TemporaryFileName);
+    raise Exception.CreateFmt('Cannot replace configuration file "%s".',
+      [FConfigFileName]);
   end;
 end;
 

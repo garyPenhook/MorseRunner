@@ -1,0 +1,483 @@
+diff --git a/linux/VCL/AudioBackendPulse.c b/linux/VCL/AudioBackendPulse.c
+index a3a26b1..6a5aa7d 100644
+--- a/linux/VCL/AudioBackendPulse.c
++++ b/linux/VCL/AudioBackendPulse.c
+@@ -19,59 +19,79 @@
+ //   zero-valued silence), so the ring is only truly empty at startup or on a
+ //   very long delay — both cases where a brief wait is correct.
+ //
+-// Thread safety: single-producer (Pascal main thread) single-consumer
+-// (playback thread) lock-free ring buffer. All shared state accessed
+-// atomically or protected by the SPSC invariant.
++// Thread safety: single-producer (Pascal main thread) / single-consumer
++// (playback thread) lock-free ring buffer. The producer publishes samples with
++// a release store of gWritePos; the consumer observes them with an acquire
++// load. The consumer releases a slot with gReadPos and the producer acquires it.
+ //
+ // Build:
+-//   gcc -c AudioBackendPulse.c -o AudioBackendPulse.o \
+-//       -fPIC $(pkg-config --cflags libpulse-simple) -O2
++//   gcc -c AudioBackendPulse.c -o AudioBackendPulse.o -fPIC
++//       $(pkg-config --cflags libpulse-simple) -O2
+ 
+ #include <pulse/simple.h>
+ #include <pulse/error.h>
+ #include <pthread.h>
+ #include <stdint.h>
+-#include <string.h>
+ #include <stdio.h>
++#include <stdatomic.h>
++#include <string.h>
+ #include <time.h>
+ 
+ // ---------------------------------------------------------------------------
+ // Ring buffer — size must be a power of 2 for the modulo-by-AND trick.
+ // At 11025 Hz mono float32, 65536 frames ≈ 5.9 seconds of audio.
+ // ---------------------------------------------------------------------------
+-#define RING_FRAMES 65536
+-#define RING_MASK   (RING_FRAMES - 1)
+-
+-static float           gRing[RING_FRAMES];
+-static volatile int    gReadPos   = 0;   // written only by playback thread
+-static volatile int    gWritePos  = 0;   // written only by Pascal main thread
+-static volatile int    gNeedsData = 0;   // set by playback thread, cleared by Pascal
+-
+-static pa_simple      *gPulse     = NULL;
+-static pthread_t       gThread;
+-static int             gBufFrames = 512;   // frames per write chunk
+-static int             gLowWater  = 2048;  // refill threshold
+-static volatile int    gRunning   = 0;
+-static float           gVolume    = 1.0f;
++#define RING_FRAMES 65536U
++#define RING_MASK   (RING_FRAMES - 1U)
++#define MAX_CHUNK_FRAMES 512U
++
++enum {
++    AUDIO_BACKEND_PULSE_ERR_ALREADY_RUNNING = -1,
++    AUDIO_BACKEND_PULSE_ERR_THREAD_CREATE = -2,
++    AUDIO_BACKEND_PULSE_ERR_INVALID_ARGUMENT = -3
++};
++
++static float gRing[RING_FRAMES];
++static _Atomic uint32_t gReadPos = 0U;   // written only by playback thread
++static _Atomic uint32_t gWritePos = 0U;  // written only by Pascal main thread
++static _Atomic int gNeedsData = 0;       // set by playback thread, taken by Pascal
++
++static pa_simple *gPulse = NULL;
++static pthread_t gThread;
++static int gThreadStarted = 0;
++static uint32_t gBufFrames = MAX_CHUNK_FRAMES;
++static uint32_t gLowWater = 2048U;
++static _Atomic int gRunning = 0;
++static _Atomic int gLastError = 0;
++static _Atomic float gVolume = 1.0f;
++
++int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs);
++void AudioBackendPulse_Stop(void);
++int AudioBackendPulse_Write(const float *samples, int nFrames);
++int AudioBackendPulse_NeedsData(void);
++void AudioBackendPulse_ClearNeedsData(void);
++int AudioBackendPulse_TakeNeedsData(void);
++int AudioBackendPulse_Available(void);
++int AudioBackendPulse_IsRunning(void);
++int AudioBackendPulse_LastError(void);
++void AudioBackendPulse_SetVolume(float vol);
+ 
+ // ---------------------------------------------------------------------------
+ // Helpers
+ // ---------------------------------------------------------------------------
+ 
+ // Frames currently available in the ring buffer for reading.
+-static int RingAvailable(void)
++static uint32_t RingAvailable(void)
+ {
+-    int w = gWritePos;
+-    int r = gReadPos;
+-    int avail = w - r;
+-    if (avail < 0) avail += RING_FRAMES;
+-    return avail;
++    uint32_t w = atomic_load_explicit(&gWritePos, memory_order_acquire);
++    uint32_t r = atomic_load_explicit(&gReadPos, memory_order_acquire);
++    return (w - r) & RING_MASK;
+ }
+ 
+ // Free slots in the ring buffer (Pascal may write this many frames).
+-static int RingSpace(void)
++static uint32_t RingSpace(void)
+ {
+-    return RING_FRAMES - 1 - RingAvailable();
++    return RING_MASK - RingAvailable();
+ }
+ 
+ static void sleep_ms(int ms)
+@@ -92,40 +112,49 @@ static void sleep_ms(int ms)
+ static void *pulse_thread_func(void *arg)
+ {
+     (void)arg;
+-    float buf[512];
++    float buf[MAX_CHUNK_FRAMES];
+     int error;
+-    int nFrames = (gBufFrames > 512) ? 512 : gBufFrames;
++    uint32_t nFrames = gBufFrames;
+ 
+-    while (gRunning) {
++    while (atomic_load_explicit(&gRunning, memory_order_acquire) != 0) {
+ 
+         /* Wait until the ring contains at least one full chunk.
+            Sleep 2 ms between checks — well under one buffer period (~46 ms). */
+-        while (gRunning && RingAvailable() < nFrames) {
+-            gNeedsData = 1;
++        while ((atomic_load_explicit(&gRunning, memory_order_acquire) != 0) &&
++               (RingAvailable() < nFrames)) {
++            atomic_store_explicit(&gNeedsData, 1, memory_order_release);
+             sleep_ms(2);
+         }
+-        if (!gRunning) break;
++        if (atomic_load_explicit(&gRunning, memory_order_acquire) == 0) {
++            break;
++        }
+ 
+         /* Copy nFrames from ring buffer, apply volume. */
+-        int rp = gReadPos;
+-        int i;
+-        for (i = 0; i < nFrames; i++) {
+-            buf[i] = gRing[rp & RING_MASK] * gVolume;
+-            rp++;
++        uint32_t rp = atomic_load_explicit(&gReadPos, memory_order_relaxed);
++        float volume = atomic_load_explicit(&gVolume, memory_order_relaxed);
++        uint32_t i;
++        for (i = 0U; i < nFrames; ++i) {
++            buf[i] = gRing[rp & RING_MASK] * volume;
++            ++rp;
+         }
+-        gReadPos = rp & RING_MASK;
++        atomic_store_explicit(&gReadPos, rp & RING_MASK, memory_order_release);
+ 
+         /* Write to PulseAudio — blocking call paces the thread to the
+            hardware clock (~46 ms per 512-frame chunk at 11025 Hz). */
+-        if (pa_simple_write(gPulse, buf, (size_t)(nFrames * sizeof(float)), &error) < 0) {
++        if (pa_simple_write(gPulse, buf, (size_t)nFrames * sizeof(float), &error) < 0) {
+             fprintf(stderr, "AudioBackendPulse: pa_simple_write failed: %s\n",
+                     pa_strerror(error));
++            if (atomic_load_explicit(&gRunning, memory_order_acquire) != 0) {
++                atomic_store_explicit(&gLastError, error, memory_order_release);
++                atomic_store_explicit(&gRunning, 0, memory_order_release);
++                atomic_store_explicit(&gNeedsData, 1, memory_order_release);
++            }
+             break;
+         }
+ 
+         /* Signal the Pascal main thread to refill if below low-water mark. */
+         if (RingAvailable() < gLowWater)
+-            gNeedsData = 1;
++            atomic_store_explicit(&gNeedsData, 1, memory_order_release);
+     }
+ 
+     return NULL;
+@@ -140,14 +169,38 @@ static void *pulse_thread_func(void *arg)
+ // ---------------------------------------------------------------------------
+ int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs)
+ {
+-    if (gRunning) return -1;
++    size_t targetBytes;
++    int error;
+ 
+-    gBufFrames = bufFrames;
+-    if (gBufFrames > 512) gBufFrames = 512;
+-    gLowWater  = bufFrames * numBufs;
+-    gReadPos   = 0;
+-    gWritePos  = 0;
+-    gNeedsData = 1;   // immediately request initial fill
++    if (atomic_load_explicit(&gRunning, memory_order_acquire) != 0) {
++        return AUDIO_BACKEND_PULSE_ERR_ALREADY_RUNNING;
++    }
++
++    if ((sampleRate <= 0) || ((uint32_t)sampleRate > PA_RATE_MAX) ||
++        (bufFrames <= 0) || ((uint32_t)bufFrames > MAX_CHUNK_FRAMES) ||
++        (numBufs <= 0) ||
++        ((uint32_t)numBufs > (RING_MASK / (uint32_t)bufFrames))) {
++        atomic_store_explicit(&gLastError,
++                              AUDIO_BACKEND_PULSE_ERR_INVALID_ARGUMENT,
++                              memory_order_release);
++        return AUDIO_BACKEND_PULSE_ERR_INVALID_ARGUMENT;
++    }
++
++    targetBytes = (size_t)(uint32_t)bufFrames * (size_t)(uint32_t)numBufs *
++                  sizeof(float);
++    if (targetBytes > UINT32_MAX) {
++        atomic_store_explicit(&gLastError,
++                              AUDIO_BACKEND_PULSE_ERR_INVALID_ARGUMENT,
++                              memory_order_release);
++        return AUDIO_BACKEND_PULSE_ERR_INVALID_ARGUMENT;
++    }
++
++    gBufFrames = (uint32_t)bufFrames;
++    gLowWater = (uint32_t)bufFrames * (uint32_t)numBufs;
++    atomic_store_explicit(&gReadPos, 0U, memory_order_relaxed);
++    atomic_store_explicit(&gWritePos, 0U, memory_order_relaxed);
++    atomic_store_explicit(&gLastError, 0, memory_order_release);
++    atomic_store_explicit(&gNeedsData, 1, memory_order_release);
+ 
+     memset(gRing, 0, sizeof(gRing));
+ 
+@@ -162,12 +215,11 @@ int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs)
+     pa_buffer_attr ba;
+     memset(&ba, 0, sizeof(ba));
+     ba.maxlength = (uint32_t)-1;
+-    ba.tlength   = (uint32_t)(bufFrames * numBufs * sizeof(float));
+-    ba.prebuf    = (uint32_t)(bufFrames * sizeof(float));
+-    ba.minreq    = (uint32_t)(bufFrames * sizeof(float));
++    ba.tlength   = (uint32_t)targetBytes;
++    ba.prebuf    = (uint32_t)bufFrames * (uint32_t)sizeof(float);
++    ba.minreq    = (uint32_t)bufFrames * (uint32_t)sizeof(float);
+     ba.fragsize  = (uint32_t)-1;  // not used for playback
+ 
+-    int error;
+     gPulse = pa_simple_new(
+         NULL,               // default server
+         "MorseRunner",      // application name
+@@ -183,18 +235,23 @@ int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs)
+     if (!gPulse) {
+         fprintf(stderr, "AudioBackendPulse: pa_simple_new failed: %s\n",
+                 pa_strerror(error));
++        atomic_store_explicit(&gLastError, error, memory_order_release);
+         return error;
+     }
+ 
+-    gRunning = 1;
++    atomic_store_explicit(&gRunning, 1, memory_order_release);
+ 
+     if (pthread_create(&gThread, NULL, pulse_thread_func, NULL) != 0) {
+         fprintf(stderr, "AudioBackendPulse: pthread_create failed\n");
+         pa_simple_free(gPulse);
+-        gPulse   = NULL;
+-        gRunning = 0;
+-        return -2;
++        gPulse = NULL;
++        atomic_store_explicit(&gRunning, 0, memory_order_release);
++        atomic_store_explicit(&gLastError,
++                              AUDIO_BACKEND_PULSE_ERR_THREAD_CREATE,
++                              memory_order_release);
++        return AUDIO_BACKEND_PULSE_ERR_THREAD_CREATE;
+     }
++    gThreadStarted = 1;
+ 
+     return 0;
+ }
+@@ -204,17 +261,25 @@ int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs)
+ // ---------------------------------------------------------------------------
+ void AudioBackendPulse_Stop(void)
+ {
+-    if (!gRunning) return;
++    int wasRunning;
+ 
+-    gRunning = 0;
+-    pthread_join(gThread, NULL);
++    wasRunning = atomic_exchange_explicit(&gRunning, 0, memory_order_acq_rel);
++    if (gThreadStarted != 0) {
++        pthread_join(gThread, NULL);
++        gThreadStarted = 0;
++    }
+ 
+     if (gPulse) {
+         int error;
+-        pa_simple_drain(gPulse, &error);
++        if ((wasRunning != 0) &&
++            (atomic_load_explicit(&gLastError, memory_order_acquire) == 0) &&
++            (pa_simple_drain(gPulse, &error) < 0)) {
++            atomic_store_explicit(&gLastError, error, memory_order_release);
++        }
+         pa_simple_free(gPulse);
+         gPulse = NULL;
+     }
++    atomic_store_explicit(&gNeedsData, 0, memory_order_release);
+ }
+ 
+ // ---------------------------------------------------------------------------
+@@ -226,21 +291,36 @@ void AudioBackendPulse_Stop(void)
+ // ---------------------------------------------------------------------------
+ int AudioBackendPulse_Write(const float *samples, int nFrames)
+ {
+-    int space   = RingSpace();
+-    int written = (nFrames < space) ? nFrames : space;
+-    int wp      = gWritePos;
++    uint32_t frameCount;
++    uint32_t space;
++    uint32_t wp;
++    uint32_t i;
++
++    if ((samples == NULL) || (nFrames <= 0) ||
++        ((uint32_t)nFrames > RING_MASK)) {
++        return 0;
++    }
++
++    frameCount = (uint32_t)nFrames;
++    space = RingSpace();
++    if (frameCount > space) {
++        return 0;
++    }
+ 
+-    int i;
+-    for (i = 0; i < written; i++) {
++    wp = atomic_load_explicit(&gWritePos, memory_order_relaxed);
++    for (i = 0U; i < frameCount; ++i) {
+         // Normalise from [-32767,32767] to [-1,1]
+         float v = samples[i] * (1.0f / 32767.0f);
++        if (v != v) {
++            v = 0.0f;
++        }
+         if (v >  1.0f) v =  1.0f;
+         if (v < -1.0f) v = -1.0f;
+         gRing[wp & RING_MASK] = v;
+-        wp++;
++        ++wp;
+     }
+-    gWritePos = wp & RING_MASK;
+-    return written;
++    atomic_store_explicit(&gWritePos, wp & RING_MASK, memory_order_release);
++    return nFrames;
+ }
+ 
+ // ---------------------------------------------------------------------------
+@@ -249,7 +329,7 @@ int AudioBackendPulse_Write(const float *samples, int nFrames)
+ // ---------------------------------------------------------------------------
+ int AudioBackendPulse_NeedsData(void)
+ {
+-    return gNeedsData;
++    return atomic_load_explicit(&gNeedsData, memory_order_acquire);
+ }
+ 
+ // ---------------------------------------------------------------------------
+@@ -257,7 +337,12 @@ int AudioBackendPulse_NeedsData(void)
+ // ---------------------------------------------------------------------------
+ void AudioBackendPulse_ClearNeedsData(void)
+ {
+-    gNeedsData = 0;
++    atomic_store_explicit(&gNeedsData, 0, memory_order_release);
++}
++
++int AudioBackendPulse_TakeNeedsData(void)
++{
++    return atomic_exchange_explicit(&gNeedsData, 0, memory_order_acq_rel);
+ }
+ 
+ // ---------------------------------------------------------------------------
+@@ -265,7 +350,17 @@ void AudioBackendPulse_ClearNeedsData(void)
+ // ---------------------------------------------------------------------------
+ int AudioBackendPulse_Available(void)
+ {
+-    return RingAvailable();
++    return (int)RingAvailable();
++}
++
++int AudioBackendPulse_IsRunning(void)
++{
++    return atomic_load_explicit(&gRunning, memory_order_acquire);
++}
++
++int AudioBackendPulse_LastError(void)
++{
++    return atomic_load_explicit(&gLastError, memory_order_acquire);
+ }
+ 
+ // ---------------------------------------------------------------------------
+@@ -273,7 +368,8 @@ int AudioBackendPulse_Available(void)
+ // ---------------------------------------------------------------------------
+ void AudioBackendPulse_SetVolume(float vol)
+ {
++    if (vol != vol) vol = 0.0f;
+     if (vol < 0.0f) vol = 0.0f;
+     if (vol > 1.0f) vol = 1.0f;
+-    gVolume = vol;
++    atomic_store_explicit(&gVolume, vol, memory_order_release);
+ }
+diff --git a/linux/VCL/SndOut.pas b/linux/VCL/SndOut.pas
+index 293acbf..736b396 100644
+--- a/linux/VCL/SndOut.pas
++++ b/linux/VCL/SndOut.pas
+@@ -34,7 +34,7 @@ unit SndOut;
+ interface
+ 
+ uses
+-  SysUtils, Classes, Controls, ExtCtrls, Math,
++  SysUtils, Classes, Controls, Dialogs, ExtCtrls, Math,
+   SndTypes, SndCustm;
+ 
+ // ---------------------------------------------------------------------------
+@@ -50,8 +50,14 @@ function  AudioBackendPulse_NeedsData: Integer;
+   cdecl; external;
+ procedure AudioBackendPulse_ClearNeedsData;
+   cdecl; external;
++function  AudioBackendPulse_TakeNeedsData: Integer;
++  cdecl; external;
+ function  AudioBackendPulse_Available: Integer;
+   cdecl; external;
++function  AudioBackendPulse_IsRunning: Integer;
++  cdecl; external;
++function  AudioBackendPulse_LastError: Integer;
++  cdecl; external;
+ procedure AudioBackendPulse_SetVolume(vol: Single);
+   cdecl; external;
+ 
+@@ -63,6 +69,7 @@ type
+     FTimer          : TTimer;
+     FOnBufAvailable : TNotifyEvent;
+     FCloseWhenDone  : boolean;
++    FLastBackendError: Integer;
+     procedure TimerTick(Sender: TObject);
+   protected
+     procedure DoSetEnabled(AEnabled: boolean); override;
+@@ -77,6 +84,7 @@ type
+     property BufCount;
+     property CloseWhenDone: boolean read FCloseWhenDone write FCloseWhenDone default false;
+     property OnBufAvailable: TNotifyEvent read FOnBufAvailable write FOnBufAvailable;
++    property LastBackendError: Integer read FLastBackendError;
+   end;
+ 
+ 
+@@ -115,10 +123,15 @@ begin
+       raise Exception.CreateFmt('AudioBackendPulse_Start failed: error %d', [Status]);
+ 
+     // TTimer fires on the LCL main thread — safe to call Pascal event handlers.
+-    FTimer := TTimer.Create(nil);
+-    FTimer.Interval := 15;   // ms; well below one buffer (~46 ms at 11025 Hz)
+-    FTimer.OnTimer  := TimerTick;
+-    FTimer.Enabled  := true;
++    try
++      FTimer := TTimer.Create(nil);
++      FTimer.Interval := 15;   // ms; well below one buffer (~46 ms at 11025 Hz)
++      FTimer.OnTimer  := TimerTick;
++      FTimer.Enabled  := true;
++    except
++      AudioBackendPulse_Stop;
++      raise;
++    end;
+   end
+   else
+   begin
+@@ -137,11 +150,23 @@ end;
+ // the NeedsData flag; we clear it and fire OnBufAvailable so the application
+ // can call PutData().
+ procedure TAlSoundOut.TimerTick(Sender: TObject);
++var
++  ErrorCode: Integer;
+ begin
+   if not FEnabled then Exit;
+-  if AudioBackendPulse_NeedsData <> 0 then
++  if AudioBackendPulse_IsRunning = 0 then
++  begin
++    ErrorCode := AudioBackendPulse_LastError;
++    FLastBackendError := ErrorCode;
++    Enabled := false;
++    if ErrorCode <> 0 then
++      MessageDlg(Format('Audio playback stopped (PulseAudio error %d).',
++        [ErrorCode]), mtError, [mbOK], 0);
++    Exit;
++  end;
++
++  if AudioBackendPulse_TakeNeedsData <> 0 then
+   begin
+-    AudioBackendPulse_ClearNeedsData;
+     if Assigned(FOnBufAvailable) then
+       FOnBufAvailable(Self);
+     Inc(FBufsDone);

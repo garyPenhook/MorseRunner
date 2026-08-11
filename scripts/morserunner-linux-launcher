@@ -7,23 +7,43 @@
 # diagnostics in the XDG state directory. Set MORSERUNNER_DEBUG=1 to send them
 # to the terminal instead.
 set -eu
-WRAPPER_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
-SOURCE_ROOT=$(CDPATH= cd -- "$WRAPPER_DIR/../.." && pwd)
-INSTALL_ROOT=$(CDPATH= cd -- "$WRAPPER_DIR/.." && pwd)
+umask 077
+WRAPPER_DIR=$(CDPATH='' cd -- "$(dirname -- "$0")" && pwd)
+SOURCE_ROOT=$(CDPATH='' cd -- "$WRAPPER_DIR/../.." && pwd)
+INSTALL_ROOT=$(CDPATH='' cd -- "$WRAPPER_DIR/.." && pwd)
 SOURCE_ENGINE="$SOURCE_ROOT/native/engine/MorseRunner"
 INSTALLED_ENGINE="$INSTALL_ROOT/lib/morserunner/MorseRunner"
 
-if [ -x "$SOURCE_ENGINE" ]; then
+# The development wrapper is built only at <source>/build/bin.  An installed
+# wrapper must never prefer a coincidental/stale <prefix>/native/engine binary.
+if [ "$WRAPPER_DIR" = "$SOURCE_ROOT/build/bin" ]; then
   ENGINE="$SOURCE_ENGINE"
 else
   ENGINE="$INSTALLED_ENGINE"
+fi
+
+if [ ! -x "$ENGINE" ]; then
+  printf '%s\n' "morserunner: executable not found: $ENGINE" >&2
+  exit 127
 fi
 
 if [ "${MORSERUNNER_DEBUG:-}" = "1" ]; then
   exec "$ENGINE" "$@"
 fi
 
-STATE_ROOT=${XDG_STATE_HOME:-"${HOME:-/tmp}/.local/state"}
+if [ -n "${XDG_STATE_HOME:-}" ]; then
+  STATE_ROOT=$XDG_STATE_HOME
+elif [ -n "${HOME:-}" ]; then
+  STATE_ROOT="$HOME/.local/state"
+else
+  printf '%s\n' 'morserunner: HOME or XDG_STATE_HOME must be set for diagnostics.' >&2
+  exit 1
+fi
 LOG_DIR="$STATE_ROOT/morserunner"
 mkdir -p "$LOG_DIR"
-exec "$ENGINE" "$@" 2>>"$LOG_DIR/gtk3-runtime.log"
+chmod 700 "$LOG_DIR"
+LOG_FILE="$LOG_DIR/gtk3-runtime.log"
+if [ -f "$LOG_FILE" ] && [ "$(wc -c < "$LOG_FILE")" -ge 1048576 ]; then
+  mv -f "$LOG_FILE" "$LOG_FILE.1"
+fi
+exec "$ENGINE" "$@" 2>>"$LOG_FILE"

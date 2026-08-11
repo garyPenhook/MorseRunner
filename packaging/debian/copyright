@@ -1,0 +1,11 @@
+Format: https://www.debian.org/doc/packaging-manuals/copyright-format/1.0/
+Upstream-Name: Morse Runner
+Source: https://github.com/WU6P/MorseRunner-Linux-MacOS
+
+Files: *
+Copyright: Morse Runner contributors
+License: MPL-2.0
+ Mozilla Public License Version 2.0.
+ .
+ On Debian systems, the complete text of the Mozilla Public License version 2.0
+ can be found in /usr/share/common-licenses/MPL-2.0.

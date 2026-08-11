@@ -1,0 +1,48 @@
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -1678,7 +1678,8 @@ begin
+     GroupBox3.Top := GroupBox1.Top + GroupBox1.Height + RowGap;
+     NeededPanelHeight := GroupBox3.Top + GroupBox3.Height + Panel10.Height + Margin;
+     if Panel9.ClientHeight < NeededPanelHeight then
+-      Height := Height + NeededPanelHeight - Panel9.ClientHeight;
++      Constraints.MinHeight := Max(Constraints.MinHeight,
++        Height + NeededPanelHeight - Panel9.ClientHeight);
+   finally
+     StationLayoutBusy := False;
+   end;
+--- a/mac/Main.lfm
++++ b/mac/Main.lfm
+@@ -1,12 +1,12 @@
+ object MainForm: TMainForm
+   Left = 173
+-  Height = 690
++  Height = 704
+   Top = 329
+   Width = 800
+   BorderIcons = [biSystemMenu, biMinimize, biMaximize]
+   BorderStyle = bsSizeable
+   Caption = 'Morse Runner - Native Linux'
+-  ClientHeight = 690
++  ClientHeight = 704
+   ClientWidth = 800
+-  Constraints.MinHeight = 690
++  Constraints.MinHeight = 704
+   Constraints.MinWidth = 800
+--- a/linux/Main.lfm
++++ b/linux/Main.lfm
+@@ -1,12 +1,12 @@
+ object MainForm: TMainForm
+   Left = 70
+-  Height = 690
++  Height = 704
+   Top = 156
+   Width = 800
+   BorderIcons = [biSystemMenu, biMinimize, biMaximize]
+   BorderStyle = bsSizeable
+   Caption = 'Morse Runner - Native Linux'
+-  ClientHeight = 690
++  ClientHeight = 704
+   ClientWidth = 800
+-  Constraints.MinHeight = 690
++  Constraints.MinHeight = 704
+   Constraints.MinWidth = 800

@@ -58,6 +58,7 @@ begin
     Settings.Audio.RingBlockCount := 7;
     Settings.Audio.MonitorLevelDb := -8;
     Store.Save(Settings);
+    Check(not FileExists(FileName + '.new'), 'temporary settings file is replaced');
 
     Loaded := Store.Load(ImportedLegacy);
     Check(not ImportedLegacy, 'native settings are not an import');

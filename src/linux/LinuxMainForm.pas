@@ -263,7 +263,11 @@ begin
       FTransmitEdit.Text := '<his> <#>';
     FClockTimer.Enabled := True;
   except
-    FClockTimer.Enabled := False;
+    on Error: Exception do
+    begin
+      FClockTimer.Enabled := False;
+      FAudioStatusLabel.Caption := 'Audio start failed: ' + Error.Message;
+    end;
   end;
   RefreshView;
 end;

@@ -1,0 +1,57 @@
+--- a/linux/VCL/AudioBackendPulse.c
++++ b/linux/VCL/AudioBackendPulse.c
+@@ -27,5 +27,6 @@
+ #include <pulse/simple.h>
+ #include <pulse/error.h>
++#include "AudioBackendPulse.h"
+ #include <pthread.h>
+ #include <stdint.h>
+ #include <stdio.h>
+@@ -65,16 +66,5 @@ static _Atomic int gLastError = 0;
+ static _Atomic float gVolume = 1.0f;
+ 
+-int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs);
+-void AudioBackendPulse_Stop(void);
+-int AudioBackendPulse_Write(const float *samples, int nFrames);
+-int AudioBackendPulse_NeedsData(void);
+-void AudioBackendPulse_ClearNeedsData(void);
+-int AudioBackendPulse_TakeNeedsData(void);
+-int AudioBackendPulse_Available(void);
+-int AudioBackendPulse_IsRunning(void);
+-int AudioBackendPulse_LastError(void);
+-void AudioBackendPulse_SetVolume(float vol);
+-
+ // ---------------------------------------------------------------------------
+ // Helpers
+ // ---------------------------------------------------------------------------
+--- /dev/null
++++ b/linux/VCL/AudioBackendPulse.h
+@@ -0,0 +1,17 @@
++// SPDX-License-Identifier: MPL-2.0
++// Public C interface consumed by the Lazarus AudioBackendPulse binding.
++#ifndef MORSE_RUNNER_AUDIO_BACKEND_PULSE_H
++#define MORSE_RUNNER_AUDIO_BACKEND_PULSE_H
++
++int AudioBackendPulse_Start(int sampleRate, int bufFrames, int numBufs);
++void AudioBackendPulse_Stop(void);
++int AudioBackendPulse_Write(const float *samples, int nFrames);
++int AudioBackendPulse_NeedsData(void);
++void AudioBackendPulse_ClearNeedsData(void);
++int AudioBackendPulse_TakeNeedsData(void);
++int AudioBackendPulse_Available(void);
++int AudioBackendPulse_IsRunning(void);
++int AudioBackendPulse_LastError(void);
++void AudioBackendPulse_SetVolume(float vol);
++
++#endif
+--- a/mac/Main.pas
++++ b/mac/Main.pas
+@@ -819,7 +819,7 @@ begin
+   RunDropBtn.Top := 11;
+   RunDropBtn.Width := 16;
+   RunDropBtn.Height := 21;
+-  RunDropBtn.Caption := #$25BE;  // ▾ small down-pointing triangle
++  RunDropBtn.Caption := 'v';
+   RunDropBtn.OnClick := RunDropBtnClick;
+   Globals.GPanel11       := Panel11;
+   Globals.GPanel2        := Panel2;

@@ -178,23 +178,49 @@ begin
 end;
 
 procedure TLinuxAudioSessionController.Configure(const Settings: TContestSettings);
+var
+  NewSettings: TContestSettings;
+  NewRing: TPcmSpscRing;
+  NewProducer: TMorseAudioProducer;
+  NewOutput: TPortAudioOutput;
 begin
   if FSession.State = ssRunning then
     raise EInvalidOp.Create('Stop the audio session before changing its settings.');
 
-  CloseOutput(False);
+  NewSettings := Settings;
+  NormalizeContestSettings(NewSettings);
+  NewRing := TPcmSpscRing.Create(NewSettings.Audio.FramesPerBlock,
+    NewSettings.Audio.RingBlockCount);
+  try
+    NewProducer := TMorseAudioProducer.Create(NewRing, NewSettings.Wpm,
+      NewSettings.Audio.SampleRate, NewSettings.PitchHz, 6000);
+    try
+      NewOutput := TPortAudioOutput.Create(NewRing);
+    except
+      NewProducer.Free;
+      raise;
+    end;
+  except
+    NewRing.Free;
+    raise;
+  end;
+
+  try
+    CloseOutput(False);
+  except
+    NewOutput.Free;
+    NewProducer.Free;
+    NewRing.Free;
+    raise;
+  end;
   FOutput.Free;
   FProducer.Free;
   FRing.Free;
-
-  FSettings := Settings;
-  NormalizeContestSettings(FSettings);
+  FSettings := NewSettings;
   FSession.Configure(FSettings);
-  FRing := TPcmSpscRing.Create(FSettings.Audio.FramesPerBlock,
-    FSettings.Audio.RingBlockCount);
-  FProducer := TMorseAudioProducer.Create(FRing, FSettings.Wpm,
-    FSettings.Audio.SampleRate, FSettings.PitchHz, 6000);
-  FOutput := TPortAudioOutput.Create(FRing);
+  FRing := NewRing;
+  FProducer := NewProducer;
+  FOutput := NewOutput;
   FQueuedMessage := '';
   FReplyMessage := '';
   FAdvanceSingleCaller := False;

@@ -35,11 +35,14 @@ uses
   Math;
 
 function LegacySampleToPcm16(const Sample: Single): SmallInt;
-var
-  RoundedSample: Integer;
 begin
-  RoundedSample := Round(Sample);
-  Result := SmallInt(Max(-32767, Min(32767, RoundedSample)));
+  if IsNan(Sample) then
+    Exit(0);
+  if Sample >= 32767.0 then
+    Exit(32767);
+  if Sample <= -32767.0 then
+    Exit(-32767);
+  Result := SmallInt(Round(Sample));
 end;
 
 constructor TLegacyPcmProducer.Create(const Ring: TPcmSpscRing);

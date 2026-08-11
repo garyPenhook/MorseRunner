@@ -1,0 +1,5 @@
+morserunner-linux (@VERSION@) unstable; urgency=medium
+
+  * Native Linux release with GTK3 and PulseAudio support.
+
+ -- @MAINTAINER@  Mon, 10 Aug 2026 12:00:00 +0000

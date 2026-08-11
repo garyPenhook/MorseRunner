@@ -16,15 +16,17 @@ application:
 
 ```sh
 git submodule update --init --recursive
+make bootstrap-toolchain
 make linux-app
-./build/bin/morserunner
+./build/bin/morserunner-linux
 ```
 
-The repository includes the Free Pascal and Lazarus toolchain used by the
-build. On a Debian-family host, install the system headers if they are absent:
+The build bootstrap fetches Lazarus at the reviewed commit recorded in
+`scripts/bootstrap-toolchain.sh`. On a Debian-family host, install Free Pascal
+and the required system headers if they are absent:
 
 ```sh
-sudo apt install build-essential pkg-config libgtk-3-dev libpulse-dev
+sudo apt install build-essential fpc make git pkg-config libgtk-3-dev libpulse-dev
 ```
 
 The first session is easiest with **Run → Single Calls**. Set your call sign,
@@ -57,13 +59,28 @@ Build a Debian package and validate its extracted installation layout:
 make deb-test
 ```
 
-The result is `build/packages/morserunner-linux_1.6.0_amd64.deb`. Build the
-portable x86_64 AppImage (the build downloads the official appimagetool into
-the ignored `build/` directory):
+The result is `build/packages/morserunner-linux_1.85.3_amd64.deb`. Build the
+portable x86_64 AppImage. The build downloads pinned-checksum copies of
+`linuxdeploy` and `appimagetool`, then uses `linuxdeploy` to deploy the engine's
+shared-library dependencies before assembly. A changed upstream download fails
+closed:
 
 ```sh
 make appimage-test
 ```
+
+For a release intended to run on older supported distributions, build the
+AppImage in the Debian 11 container rather than on the developer host. This
+uses glibc 2.31, bundles non-base runtime libraries, and launches the result
+under Xvfb:
+
+```sh
+make container-release
+```
+
+`make container-test` runs the core suite, production build, and Debian-package
+startup test in the same baseline image. Docker or a compatible container
+runtime is required for these two portability gates.
 
 ## Data and diagnostics
 

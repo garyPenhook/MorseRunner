@@ -1,0 +1,24 @@
+--- a/CallLst.pas
++++ b/CallLst.pas
+@@ -79,4 +79,5 @@ var
+   ImportedCalls: TStringList;
+   DestinationFileName: string;
++  TemporaryFileName: string;
+ begin
+   Result := False;
+@@ -108,5 +109,14 @@ begin
+     {$endif}
+     try
+-      ImportedCalls.SaveToFile(DestinationFileName);
++      // Publish the complete replacement atomically, preserving a usable
++      // existing list if the import is interrupted or the disk fills up.
++      TemporaryFileName := DestinationFileName + '.new';
++      DeleteFile(TemporaryFileName);
++      ImportedCalls.SaveToFile(TemporaryFileName);
++      if not RenameFile(TemporaryFileName, DestinationFileName) then
++      begin
++        DeleteFile(TemporaryFileName);
++        raise Exception.CreateFmt('Cannot replace "%s".', [DestinationFileName]);
++      end;
+     except
+       on E: Exception do

@@ -1,0 +1,35 @@
+diff --git a/mac/VCL/WavFile.pas b/mac/VCL/WavFile.pas
+index dd54b37..b3b8adb 100644
+--- a/mac/VCL/WavFile.pas
++++ b/mac/VCL/WavFile.pas
+@@ -342,6 +342,8 @@ var
+   pR  : PSingle;
+ begin
+   ErrIf(not FIsOpen or not FWriteMode, 'Not open for writing');
++  ErrIf((ASampleCnt <> 0) and (ALData = nil), 'Left sample data is nil');
++  if ASampleCnt = 0 then Exit;
+   pL := ALData;
+   pR := ARData;
+   for i := 0 to ASampleCnt - 1 do
+@@ -390,6 +392,8 @@ var
+   pR       : PSingle;
+ begin
+   ErrIf(not FIsOpen or FWriteMode, 'Not open for reading');
++  ErrIf((ASampleCnt <> 0) and (ALData = nil), 'Left sample data is nil');
++  if ASampleCnt = 0 then Exit(0);
+   Remaining := FSampleCnt - FCurrentSample;
+   if ASampleCnt > Remaining then ASampleCnt := Remaining;
+   pL := ALData;
+@@ -418,6 +422,12 @@ end;
+ //------------------------------------------------------------------------------
+ procedure TAlWavFile.Read(ASampleCnt: LongWord);
+ begin
++  if ASampleCnt = 0 then
++  begin
++    SetLength(FLData, 0);
++    if FStereo then SetLength(FRData, 0);
++    Exit;
++  end;
+   SetLength(FLData, ASampleCnt);
+   if FStereo then SetLength(FRData, ASampleCnt);
+   if FStereo then

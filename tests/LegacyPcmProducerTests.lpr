@@ -4,6 +4,7 @@ program LegacyPcmProducerTests;
 
 uses
   SysUtils,
+  Math,
   LegacyPcmProducer,
   PcmRing;
 
@@ -41,6 +42,9 @@ begin
   CheckEquals(0, LegacySampleToPcm16(0), 'silence');
   CheckEquals(2, LegacySampleToPcm16(1.6), 'positive rounding');
   CheckEquals(32767, LegacySampleToPcm16(50000), 'positive clip');
+  CheckEquals(0, LegacySampleToPcm16(NaN), 'NaN is rendered as silence');
+  CheckEquals(32767, LegacySampleToPcm16(Infinity), 'positive infinity clips');
+  CheckEquals(-32767, LegacySampleToPcm16(-Infinity), 'negative infinity clips');
 end;
 
 procedure TestProducerConvertsAndQueuesBlock;

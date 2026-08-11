@@ -1,0 +1,27 @@
+diff --git a/linux/GetDataPath.pas b/linux/GetDataPath.pas
+index c803145..f111b1b 100644
+--- a/linux/GetDataPath.pas
++++ b/linux/GetDataPath.pas
+@@ -43,12 +43,18 @@ begin
+   // Falls back to ~/.local/share/MorseRunner/ if $XDG_DATA_HOME is unset.
+   DataHome := GetEnvironmentVariable('XDG_DATA_HOME');
+   if DataHome = '' then
+-    DataHome := GetEnvironmentVariable('HOME') + '/.local/share';
++  begin
++    DataHome := GetEnvironmentVariable('HOME');
++    if DataHome = '' then
++      raise Exception.Create(
++        'Morse Runner needs HOME or XDG_DATA_HOME to store user data.');
++    DataHome := IncludeTrailingPathDelimiter(DataHome) + '.local/share';
++  end;
+ 
+-  AppDir := DataHome + '/MorseRunner/';
++  AppDir := IncludeTrailingPathDelimiter(DataHome) + 'MorseRunner/';
+ 
+-  if not DirectoryExists(AppDir) then
+-    ForceDirectories(AppDir);
++  if (not DirectoryExists(AppDir)) and (not ForceDirectories(AppDir)) then
++    RaiseLastOSError;
+ 
+   Result := AppDir;
+ end;

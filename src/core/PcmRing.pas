@@ -53,6 +53,10 @@ begin
   if Capacity < 2 then
     raise EArgumentOutOfRangeException.Create(
       'PCM ring capacity must contain at least two blocks.');
+  if BlockFrames > MaxInt div SizeOf(SmallInt) then
+    raise EArgumentOutOfRangeException.Create('PCM block size is too large.');
+  if Capacity = MaxInt then
+    raise EArgumentOutOfRangeException.Create('PCM ring capacity is too large.');
 
   FBlockFrames := BlockFrames;
   FCapacity := Capacity;
@@ -150,7 +154,7 @@ procedure TPcmSpscRing.ReadOrSilenceToBuffer(const Destination: PSmallInt;
   const SampleCount: Integer);
 begin
   if (Destination = nil) or (SampleCount <> FBlockFrames) then
-    Exit;
+    raise EArgumentException.Create('PCM read size does not match ring block size.');
   if TryReadToBuffer(Destination, SampleCount) then
     Exit;
 
