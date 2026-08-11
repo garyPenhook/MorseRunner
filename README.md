@@ -59,7 +59,7 @@ Build a Debian package and validate its extracted installation layout:
 make deb-test
 ```
 
-The result is `build/packages/morserunner-linux_1.85.5_amd64.deb`. Build the
+The result is `build/packages/morserunner-linux_1.85.6_amd64.deb`. Build the
 portable x86_64 AppImage. The build downloads pinned-checksum copies of
 `linuxdeploy` and `appimagetool`, then uses `linuxdeploy` to deploy the engine's
 shared-library dependencies before assembly. A changed upstream download fails
