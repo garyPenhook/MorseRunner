@@ -12,10 +12,10 @@ if [ -z "$fpc_version" ]; then
 fi
 
 case "$fpc_version" in
-  3.2.2*)
+  3.2.*)
     ;;
   *)
-    printf '%s\n' "Free Pascal 3.2.2 is required; $fpc_binary reported: $fpc_version" >&2
+    printf '%s\n' "Free Pascal 3.2.x is required; $fpc_binary reported: $fpc_version" >&2
     exit 1
     ;;
 esac
