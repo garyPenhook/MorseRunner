@@ -1,15 +1,35 @@
+diff --git a/lcl/interfaces/gtk3/gtk3bindings/lazgmodule2.pas b/lcl/interfaces/gtk3/gtk3bindings/lazgmodule2.pas
+index 955d466a..c467fcbe 100644
+--- a/lcl/interfaces/gtk3/gtk3bindings/lazgmodule2.pas
++++ b/lcl/interfaces/gtk3/gtk3bindings/lazgmodule2.pas
+@@ -102,7 +102,7 @@ end;
+ 
+ function TGModule.error_quark: TGQuark; cdecl;
+ begin
+-  Result := LazGModule2.g_module_error_quark();
++  Result := LazGLib2.g_quark_from_static_string('g-module-error-quark');
+ end;
+ 
+ function TGModule.open(file_name: Pgchar; flags: TGModuleFlags): PGModule; cdecl;
 diff --git a/lcl/interfaces/gtk3/gtk3object.inc b/lcl/interfaces/gtk3/gtk3object.inc
+index a3d15c85..4152bd94 100644
 --- a/lcl/interfaces/gtk3/gtk3object.inc
 +++ b/lcl/interfaces/gtk3/gtk3object.inc
 @@ -492,7 +492,6 @@ begin
      end else
-       DebugLn('TGtk3WidgetSet.Gtk3Destroy app Windows list ',dbgs(g_list_length(AList)));
+       DebugLn('TGtk3WidgetSet.Gtk3Destroy app Windows list is null ');
      {$ENDIF}
 -    FGtk3Application^.release;
      FGtk3Application^.unref;
      FGtk3Application := nil;
    end;
+@@ -857,4 +856,3 @@ begin
+   cairo_destroy(cr);
+   Result := HFONT(AFont);
+ end;
+-
 diff --git a/lcl/interfaces/gtk3/gtk3objects.pas b/lcl/interfaces/gtk3/gtk3objects.pas
+index 25e12fce..c4bf46c4 100644
 --- a/lcl/interfaces/gtk3/gtk3objects.pas
 +++ b/lcl/interfaces/gtk3/gtk3objects.pas
 @@ -882,11 +882,22 @@ begin
@@ -40,7 +60,21 @@ diff --git a/lcl/interfaces/gtk3/gtk3objects.pas b/lcl/interfaces/gtk3/gtk3objec
    end;
    FData := nil;
    FDataOwner := False;
+@@ -1500,6 +1511,12 @@ begin
+ 
+     ACairo := gdk_cairo_create(gdk_get_default_root_window);
+     gdk_cairo_get_clip_rectangle(ACairo, @ARect);
++    // A compositor may expose an empty root-window clip while the desktop is
++    // starting. Cairo and GdkPixbuf require strictly positive dimensions.
++    if ARect.width <= 0 then
++      ARect.width := 1;
++    if ARect.height <= 0 then
++      ARect.height := 1;
+     CairoSurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ARect.width, ARect.height);
+     pcr := cairo_create(CairoSurface);
+ 
 diff --git a/lcl/interfaces/gtk3/gtk3widgets.pas b/lcl/interfaces/gtk3/gtk3widgets.pas
+index 7a4d55c4..c2c62bb1 100644
 --- a/lcl/interfaces/gtk3/gtk3widgets.pas
 +++ b/lcl/interfaces/gtk3/gtk3widgets.pas
 @@ -6919,13 +6919,13 @@ begin
@@ -61,18 +95,8 @@ diff --git a/lcl/interfaces/gtk3/gtk3widgets.pas b/lcl/interfaces/gtk3/gtk3widge
    end;
    if PGtkComboBox(GetContainerWidget)^.priv3^.area <> nil then
      g_object_set_data(PGObject(PGtkComboBox(GetContainerWidget)^.priv3^.area), 'lclwidget', Self);
-diff --git a/lcl/interfaces/gtk3/gtk3objects.pas b/lcl/interfaces/gtk3/gtk3objects.pas
---- a/lcl/interfaces/gtk3/gtk3objects.pas
-+++ b/lcl/interfaces/gtk3/gtk3objects.pas
-@@ -1508,6 +1508,12 @@ begin
+@@ -8332,4 +8332,3 @@ begin
+ end;
  
-     ACairo := gdk_cairo_create(gdk_get_default_root_window);
-     gdk_cairo_get_clip_rectangle(ACairo, @ARect);
-+    // A compositor may expose an empty root-window clip while the desktop is
-+    // starting. Cairo and GdkPixbuf require strictly positive dimensions.
-+    if ARect.width <= 0 then
-+      ARect.width := 1;
-+    if ARect.height <= 0 then
-+      ARect.height := 1;
-     CairoSurface := cairo_image_surface_create(CAIRO_FORMAT_ARGB32, ARect.width, ARect.height);
-     pcr := cairo_create(CairoSurface);
+ end.
+-
