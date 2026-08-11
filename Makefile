@@ -378,7 +378,7 @@ appimage: check-package-arch check-appimage-tools linux-app $(APPIMAGE_TOOL)
 	install -m 644 packaging/morserunner.desktop "$(APPIMAGE_ROOT)/morserunner.desktop"
 	install -m 644 $(ENGINE_DIR)/MorseRunner.png "$(APPIMAGE_ROOT)/morserunner.png"
 	install -m 755 packaging/AppRun "$(APPIMAGE_ROOT)/AppRun"
-	$(LINUXDEPLOY) --appdir "$(APPIMAGE_ROOT)" \
+	APPIMAGE_EXTRACT_AND_RUN=1 $(LINUXDEPLOY) --appdir "$(APPIMAGE_ROOT)" \
 		--executable "$(APPIMAGE_ROOT)/usr/lib/morserunner/MorseRunner" \
 		--desktop-file "$(APPIMAGE_ROOT)/morserunner.desktop" \
 		--icon-file "$(APPIMAGE_ROOT)/morserunner.png"
