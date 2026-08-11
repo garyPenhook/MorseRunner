@@ -196,7 +196,12 @@ endif
 $(LAZARUS_GTK3_PATCH_STAMP): patches/lazarus-gtk3-runtime-cleanup.patch
 	@test -x $(LOCAL_LAZBUILD) || \
 		(echo "The patched GTK3 build requires the project-local Lazarus source at $(LOCAL_LAZARUS_DIR)." >&2; exit 1)
-	cd $(LOCAL_LAZARUS_DIR) && patch --forward --batch -p1 < ../../patches/lazarus-gtk3-runtime-cleanup.patch
+	cd $(LOCAL_LAZARUS_DIR) && \
+		if patch --dry-run --reverse -p1 < ../../patches/lazarus-gtk3-runtime-cleanup.patch >/dev/null 2>&1; then \
+			echo "GTK3 compatibility patch is already applied"; \
+		else \
+			patch --forward --batch -p1 < ../../patches/lazarus-gtk3-runtime-cleanup.patch; \
+		fi
 	touch $@
 
 $(LAZARUS_GTK3_BUILD_STAMP): $(LAZARUS_GTK3_PATCH_STAMP)
