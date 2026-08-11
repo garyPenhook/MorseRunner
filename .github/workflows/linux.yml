@@ -15,11 +15,10 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install container runtime prerequisites
+      - name: Verify container runtime
         run: |
-          sudo apt-get update
-          sudo apt-get install -y --no-install-recommends \
-            docker.io make
+          docker version
+          make --version
 
       - name: Build and test against the portable glibc baseline
         run: |
