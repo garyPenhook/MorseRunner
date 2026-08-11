@@ -347,9 +347,9 @@ deb-test: deb
 	test -f "$$stage/usr/share/icons/hicolor/128x128/apps/morserunner.png"; \
 	test -f "$$stage/usr/share/doc/morserunner-linux/copyright"; \
 	test -f "$$stage/usr/share/doc/morserunner-linux/changelog.Debian"; \
-	status=0; XDG_DATA_HOME="$$stage/data" XDG_STATE_HOME="$$stage/state" \
-		timeout 8s xvfb-run -a "$$stage/usr/bin/morserunner" >/dev/null 2>&1 || status=$$?; \
-	test "$$status" = 124 || (echo "Packaged application exited with $$status" >&2; exit 1); \
+	log="$$stage/launcher.log"; status=0; XDG_DATA_HOME="$$stage/data" XDG_STATE_HOME="$$stage/state" \
+		MORSERUNNER_DEBUG=1 timeout 8s xvfb-run -a "$$stage/usr/bin/morserunner" >"$$log" 2>&1 || status=$$?; \
+	test "$$status" = 124 || (cat "$$log" >&2; echo "Packaged application exited with $$status" >&2; exit 1); \
 	echo "Debian package installs and reaches its GUI event loop"
 
 # The AppImage is a portable x86_64 distribution built from the same installed
@@ -389,9 +389,9 @@ appimage-test: appimage
 	set -eu; stage=$$(mktemp -d /tmp/morserunner-appimage-test.XXXXXX); \
 	trap 'rm -rf "$$stage"' EXIT HUP INT TERM; \
 	test -x "$(APPIMAGE_OUTPUT)"; \
-	status=0; XDG_DATA_HOME="$$stage/data" XDG_STATE_HOME="$$stage/state" \
-		APPIMAGE_EXTRACT_AND_RUN=1 timeout 8s xvfb-run -a "$(APPIMAGE_OUTPUT)" >/dev/null 2>&1 || status=$$?; \
-	test "$$status" = 124 || (echo "AppImage application exited with $$status" >&2; exit 1); \
+	log="$$stage/launcher.log"; status=0; XDG_DATA_HOME="$$stage/data" XDG_STATE_HOME="$$stage/state" \
+		MORSERUNNER_DEBUG=1 APPIMAGE_EXTRACT_AND_RUN=1 timeout 8s xvfb-run -a "$(APPIMAGE_OUTPUT)" >"$$log" 2>&1 || status=$$?; \
+	test "$$status" = 124 || (cat "$$log" >&2; echo "AppImage application exited with $$status" >&2; exit 1); \
 	echo "AppImage enters Morse Runner's GUI event loop"
 
 # Retained only for testing the new audio seam while the old engine is migrated.
