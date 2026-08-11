@@ -196,7 +196,7 @@ endif
 $(LAZARUS_GTK3_PATCH_STAMP): patches/lazarus-gtk3-runtime-cleanup.patch
 	@test -x $(LOCAL_LAZBUILD) || \
 		(echo "The patched GTK3 build requires the project-local Lazarus source at $(LOCAL_LAZARUS_DIR)." >&2; exit 1)
-	cd $(LOCAL_LAZARUS_DIR) && (patch --dry-run -R --batch -p1 < ../../patches/lazarus-gtk3-runtime-cleanup.patch >/dev/null || patch --batch -p1 < ../../patches/lazarus-gtk3-runtime-cleanup.patch)
+	cd $(LOCAL_LAZARUS_DIR) && patch --forward --batch -p1 < ../../patches/lazarus-gtk3-runtime-cleanup.patch
 	touch $@
 
 $(LAZARUS_GTK3_BUILD_STAMP): $(LAZARUS_GTK3_PATCH_STAMP)
