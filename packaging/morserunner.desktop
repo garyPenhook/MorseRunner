@@ -9,3 +9,4 @@ Terminal=false
 Categories=Education;
 Keywords=CW;Morse;Amateur Radio;Contest;Ham Radio;
 StartupNotify=true
+StartupWMClass=MorseRunner

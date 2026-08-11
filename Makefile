@@ -26,9 +26,11 @@ BINDIR ?= $(PREFIX)/bin
 LIBEXECDIR ?= $(PREFIX)/lib/morserunner
 DATADIR ?= $(PREFIX)/share/morserunner
 DESKTOPDIR ?= $(PREFIX)/share/applications
-ICONDIR ?= $(PREFIX)/share/icons/hicolor/128x128/apps
+ICONDIR ?= $(PREFIX)/share/icons/hicolor/256x256/apps
+ICONDIR_128 ?= $(PREFIX)/share/icons/hicolor/128x128/apps
+DESKTOP_ICON_PATH ?= $(ICONDIR)/morserunner.png
 METAINFODIR ?= $(PREFIX)/share/metainfo
-PACKAGE_VERSION ?= 1.85.4
+PACKAGE_VERSION ?= 1.85.5
 DEB_MAINTAINER ?= Gary Penhook <penhookcoder@gmail.com>
 DEB_ARCH ?= $(shell dpkg --print-architecture)
 
@@ -62,6 +64,8 @@ ENGINE_AUDIO_CFLAGS ?= -std=c17 -O2 -fPIC -Wall -Wextra -Wpedantic \
 	-Wconversion -Wsign-conversion -Wshadow -Wstrict-prototypes \
 	-Wmissing-prototypes -Wformat=2 -Wundef
 ENGINE_BINARY := $(ENGINE_DIR)/MorseRunner
+DESKTOP_ICON := assets/morserunner-desktop-icon.png
+WINDOW_ICON := assets/morserunner-desktop-icon.ico
 ENGINE_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-scp-patch-applied
 ENGINE_UI_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-ui-patch-applied
 ENGINE_HELP_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-help-patch-applied
@@ -304,13 +308,16 @@ $(CORE_BIN_DIR)/morserunner-linux: scripts/morserunner-linux-launcher
 # its read-only contest files alongside its executable, while user state stays
 # in the XDG data directory.
 install: linux-app packaging/morserunner.desktop
-	install -d "$(BINDIR)" "$(LIBEXECDIR)" "$(DATADIR)" "$(DESKTOPDIR)" "$(ICONDIR)" "$(METAINFODIR)"
+	install -d "$(BINDIR)" "$(LIBEXECDIR)" "$(DATADIR)" "$(DESKTOPDIR)" "$(ICONDIR)" "$(ICONDIR_128)" "$(METAINFODIR)"
 	install -m 755 scripts/morserunner-linux-launcher "$(BINDIR)/morserunner"
 	install -m 755 scripts/morserunner-linux-launcher "$(BINDIR)/morserunner-linux"
 	install -m 755 $(ENGINE_BINARY) "$(LIBEXECDIR)/MorseRunner"
 	install -m 644 $(addprefix $(ENGINE_DIR)/,$(ENGINE_RUNTIME_DATA)) "$(LIBEXECDIR)/"
-	install -m 644 packaging/morserunner.desktop "$(DESKTOPDIR)/morserunner.desktop"
-	install -m 644 $(ENGINE_DIR)/MorseRunner.png "$(ICONDIR)/morserunner.png"
+	install -m 644 $(DESKTOP_ICON) "$(LIBEXECDIR)/MorseRunner.png"
+	install -m 644 $(WINDOW_ICON) "$(LIBEXECDIR)/MorseRunner.ico"
+	sed 's|^Icon=.*|Icon=$(DESKTOP_ICON_PATH)|' packaging/morserunner.desktop > "$(DESKTOPDIR)/morserunner.desktop"
+	install -m 644 $(DESKTOP_ICON) "$(ICONDIR)/morserunner.png"
+	install -m 644 $(DESKTOP_ICON) "$(ICONDIR_128)/morserunner.png"
 	install -m 644 packaging/morserunner.metainfo.xml "$(METAINFODIR)/morserunner.metainfo.xml"
 
 # A conventional Debian package keeps the engine and its contest files under
@@ -324,7 +331,8 @@ deb: check-package-arch linux-app packaging/debian/control.in packaging/debian/c
 	sed -e 's/@VERSION@/$(PACKAGE_VERSION)/' -e 's/@ARCH@/$(DEB_ARCH)/' \
 		-e 's|@MAINTAINER@|$(DEB_MAINTAINER)|' \
 		packaging/debian/control.in > "$(DEB_ROOT)/DEBIAN/control"
-	$(MAKE) install PREFIX="$(DEB_ROOT)/usr"
+	$(MAKE) install PREFIX="$(DEB_ROOT)/usr" \
+		DESKTOP_ICON_PATH="/usr/share/icons/hicolor/256x256/apps/morserunner.png"
 	install -d "$(DEB_ROOT)/usr/share/doc/morserunner-linux"
 	sed -e 's/@VERSION@/$(PACKAGE_VERSION)/' \
 		-e 's|@MAINTAINER@|$(DEB_MAINTAINER)|' \
@@ -343,7 +351,10 @@ deb-test: deb
 	test -x "$$stage/usr/bin/morserunner-linux"; \
 	test -x "$$stage/usr/lib/morserunner/MorseRunner"; \
 	test -f "$$stage/usr/lib/morserunner/MASTER.SCP"; \
+	test -f "$$stage/usr/lib/morserunner/MorseRunner.ico"; \
 	desktop-file-validate "$$stage/usr/share/applications/morserunner.desktop"; \
+	test "$$(sed -n 's/^Icon=//p' "$$stage/usr/share/applications/morserunner.desktop")" = "/usr/share/icons/hicolor/256x256/apps/morserunner.png"; \
+	test -f "$$stage/usr/share/icons/hicolor/256x256/apps/morserunner.png"; \
 	test -f "$$stage/usr/share/icons/hicolor/128x128/apps/morserunner.png"; \
 	test -f "$$stage/usr/share/doc/morserunner-linux/copyright"; \
 	test -f "$$stage/usr/share/doc/morserunner-linux/changelog.Debian"; \
@@ -371,12 +382,13 @@ appimage: check-package-arch check-appimage-tools linux-app $(APPIMAGE_TOOL)
 	test -n "$(APPIMAGE_ROOT)" && rm -rf "$(APPIMAGE_ROOT)"
 	rm -f "$(APPIMAGE_OUTPUT)"
 	install -d "$(APPIMAGE_ROOT)"
-	$(MAKE) install PREFIX="$(APPIMAGE_ROOT)/usr"
+	$(MAKE) install PREFIX="$(APPIMAGE_ROOT)/usr" \
+		DESKTOP_ICON_PATH="/usr/share/icons/hicolor/256x256/apps/morserunner.png"
 	install -d "$(APPIMAGE_ROOT)/usr/share/doc/morserunner-linux"
 	install -m 644 LICENSE "$(APPIMAGE_ROOT)/usr/share/doc/morserunner-linux/MPL-2.0.txt"
 	install -m 644 packaging/debian/copyright "$(APPIMAGE_ROOT)/usr/share/doc/morserunner-linux/copyright"
 	install -m 644 packaging/morserunner.desktop "$(APPIMAGE_ROOT)/morserunner.desktop"
-	install -m 644 $(ENGINE_DIR)/MorseRunner.png "$(APPIMAGE_ROOT)/morserunner.png"
+	install -m 644 $(DESKTOP_ICON) "$(APPIMAGE_ROOT)/morserunner.png"
 	install -m 755 packaging/AppRun "$(APPIMAGE_ROOT)/AppRun"
 	APPIMAGE_EXTRACT_AND_RUN=1 $(LINUXDEPLOY) --appdir "$(APPIMAGE_ROOT)" \
 		--executable "$(APPIMAGE_ROOT)/usr/lib/morserunner/MorseRunner" \
