@@ -19,6 +19,7 @@ RUN apt-get update \
         libpulse-dev \
         portaudio19-dev \
         patch \
+        xauth \
         xvfb \
     && rm -rf /var/lib/apt/lists/*
 
