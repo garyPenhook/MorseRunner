@@ -44,6 +44,9 @@ APPIMAGE_TOOL_URL ?= https://github.com/AppImage/appimagetool/releases/download/
 # SHA-256 of the reviewed x86_64 tool input. A changed mutable upstream asset
 # fails closed until its checksum is deliberately reviewed and updated.
 APPIMAGE_TOOL_SHA256 ?= a6d71e2b6cd66f8e8d16c37ad164658985e0cf5fcaa950c90a482890cb9d13e0
+APPIMAGE_RUNTIME := $(BUILD_DIR)/tools/runtime-$(APPIMAGE_ARCH)
+APPIMAGE_RUNTIME_URL ?= https://github.com/AppImage/type2-runtime/releases/download/continuous/runtime-$(APPIMAGE_ARCH)
+APPIMAGE_RUNTIME_SHA256 ?= 1cc49bcf1e2ccd593c379adb17c9f85a36d619088296504de95b1d06215aebbf
 LINUXDEPLOY_TOOL := $(BUILD_DIR)/tools/linuxdeploy-$(APPIMAGE_ARCH).AppImage
 LINUXDEPLOY_URL ?= https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-$(APPIMAGE_ARCH).AppImage
 LINUXDEPLOY_SHA256 ?= 421ca71d5c69ea97c6309276232990d43df1dcece0edfaa26bbf926ff96ed12e
@@ -184,7 +187,7 @@ check-appimage-tools: $(LINUXDEPLOY_TOOL)
 	@test -x "$(LINUXDEPLOY)" || \
 		(echo "A reviewed linuxdeploy executable is required to bundle AppImage dependencies." >&2; exit 1)
 
-appimage-tools: $(APPIMAGE_TOOL) $(LINUXDEPLOY_TOOL)
+appimage-tools: $(APPIMAGE_TOOL) $(APPIMAGE_RUNTIME) $(LINUXDEPLOY_TOOL)
 
 ifeq ($(wildcard $(LOCAL_LAZBUILD)),)
 # System Lazarus builds are supported for the portable-container target. The
@@ -375,13 +378,20 @@ $(APPIMAGE_TOOL):
 	printf '%s  %s\n' "$(APPIMAGE_TOOL_SHA256)" "$@" | sha256sum --check --status
 	chmod 755 "$@"
 
+$(APPIMAGE_RUNTIME):
+	install -d "$(dir $@)"
+	curl --fail --location --retry 5 --retry-all-errors --connect-timeout 20 --output "$@" \
+		"$(APPIMAGE_RUNTIME_URL)"
+	printf '%s  %s\n' "$(APPIMAGE_RUNTIME_SHA256)" "$@" | sha256sum --check --status
+	chmod 755 "$@"
+
 $(LINUXDEPLOY_TOOL):
 	install -d "$(dir $@)"
 	curl --fail --location --retry 3 --output "$@" "$(LINUXDEPLOY_URL)"
 	printf '%s  %s\n' "$(LINUXDEPLOY_SHA256)" "$@" | sha256sum --check --status
 	chmod 755 "$@"
 
-appimage: check-package-arch check-appimage-tools linux-app $(APPIMAGE_TOOL)
+appimage: check-package-arch check-appimage-tools linux-app $(APPIMAGE_TOOL) $(APPIMAGE_RUNTIME)
 	test -n "$(APPIMAGE_ROOT)" && rm -rf "$(APPIMAGE_ROOT)"
 	rm -f "$(APPIMAGE_OUTPUT)"
 	install -d "$(APPIMAGE_ROOT)"
@@ -398,7 +408,7 @@ appimage: check-package-arch check-appimage-tools linux-app $(APPIMAGE_TOOL)
 		--desktop-file "$(APPIMAGE_ROOT)/morserunner.desktop" \
 		--icon-file "$(APPIMAGE_ROOT)/morserunner.png"
 	ARCH="$(APPIMAGE_ARCH)" APPIMAGE_EXTRACT_AND_RUN=1 "$(APPIMAGE_TOOL)" \
-		"$(APPIMAGE_ROOT)" "$(APPIMAGE_OUTPUT)"
+		--runtime-file "$(APPIMAGE_RUNTIME)" "$(APPIMAGE_ROOT)" "$(APPIMAGE_OUTPUT)"
 
 appimage-test: appimage
 	set -eu; stage=$$(mktemp -d /tmp/morserunner-appimage-test.XXXXXX); \
