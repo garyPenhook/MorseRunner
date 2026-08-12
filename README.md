@@ -59,7 +59,7 @@ Build a Debian package and validate its extracted installation layout:
 make deb-test
 ```
 
-The result is `build/packages/morserunner-linux_1.85.6_amd64.deb`. Build the
+The result is `build/packages/morserunner-linux_1.85.7_amd64.deb`. Build the
 portable x86_64 AppImage. The build downloads pinned-checksum copies of
 `linuxdeploy` and `appimagetool`, then uses `linuxdeploy` to deploy the engine's
 shared-library dependencies before assembly. A changed upstream download fails
@@ -94,9 +94,9 @@ KDE Plasma and other freedesktop-compliant desktops.
 For pile-up practice, set **Activity** to `2` or higher and use the two
 **Caller WPM range** fields in the Station panel. Every newly-created caller
 then receives an independent random whole-number speed from the inclusive
-range—for example, `26` through `35` WPM. The range is saved with your other
-settings. Set either endpoint to `0` to disable it; the existing Settings →
-CW Min/Max RX Speed behavior remains the fallback.
+range—for example, `28` through `35` WPM. The range is saved with your other
+settings. The caller-speed floor is `28` WPM; use each field's up/down spinner
+buttons to adjust the limits.
 
 ## Data and diagnostics
 

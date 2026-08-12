@@ -30,7 +30,7 @@ ICONDIR ?= $(PREFIX)/share/icons/hicolor/256x256/apps
 ICONDIR_128 ?= $(PREFIX)/share/icons/hicolor/128x128/apps
 DESKTOP_ICON_PATH ?= $(ICONDIR)/morserunner.png
 METAINFODIR ?= $(PREFIX)/share/metainfo
-PACKAGE_VERSION ?= 1.85.6
+PACKAGE_VERSION ?= 1.85.7
 DEB_MAINTAINER ?= Gary Penhook <penhookcoder@gmail.com>
 DEB_ARCH ?= $(shell dpkg --print-architecture)
 
