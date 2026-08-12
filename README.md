@@ -1,5 +1,10 @@
 # Morse Runner — Native Linux
 
+[![Linux build and package](https://github.com/garyPenhook/MorseRunner/actions/workflows/linux.yml/badge.svg?branch=master)](https://github.com/garyPenhook/MorseRunner/actions/workflows/linux.yml)
+[![Latest release](https://img.shields.io/github/v/release/garyPenhook/MorseRunner?display_name=tag&sort=semver)](https://github.com/garyPenhook/MorseRunner/releases/latest)
+[![Release downloads](https://img.shields.io/github/downloads/garyPenhook/MorseRunner/total)](https://github.com/garyPenhook/MorseRunner/releases)
+[![License: MPL-2.0](https://img.shields.io/badge/License-MPL--2.0-brightgreen.svg)](https://www.mozilla.org/MPL/2.0/)
+
 Morse Runner is a native Linux CW contest simulator for practicing pile-ups,
 single calls, WPX competition, and HST competition. It runs as a Linux ELF
 application with a GTK3 interface and PulseAudio/PipeWire-compatible audio;
