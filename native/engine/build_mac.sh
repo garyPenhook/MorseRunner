@@ -1,0 +1,136 @@
+#!/bin/bash
+# Build MorseRunner for macOS (Apple M1 / aarch64).
+# lazbuild uses FPC 3.2.2 which generates ppaslink.sh with the new ld-prime
+# linker that rejects FPC's ObjC metadata format. We intercept the link step
+# and substitute ld-classic (which ships alongside ld on Xcode / CommandLineTools).
+set -e
+cd "$(dirname "$0")"
+
+LD_NEW=/Library/Developer/CommandLineTools/usr/bin/ld
+LD_OLD=/Library/Developer/CommandLineTools/usr/bin/ld-classic
+PPASLINK=lib/aarch64-darwin/ppaslink.sh
+
+BINARY=lib/aarch64-darwin/MorseRunner
+
+if [ ! -x "$LD_OLD" ]; then
+  echo "ERROR: $LD_OLD not found — cannot build without ld-classic"
+  exit 1
+fi
+
+build_app_bundle() {
+  echo "=== Building MorseRunner.app bundle ==="
+  APP=MorseRunner.app
+  MACOS="$APP/Contents/MacOS"
+  RES="$APP/Contents/Resources"
+  mkdir -p "$MACOS" "$RES"
+  cp "$BINARY" "$MACOS/MorseRunner"
+  codesign --force --deep -s - "$MACOS/MorseRunner" 2>/dev/null || true
+  [ -f MorseRunner.icns ] && cp MorseRunner.icns "$RES/"
+  for f in *.LIST *.DTA; do
+    [ -f "$f" ] && cp "$f" "$RES/"
+  done
+  for f in *.txt; do
+    [ -f "$f" ] && [ "$f" != "*.txt" ] && cp "$f" "$RES/"
+  done
+  cat > "$APP/Contents/Info.plist" << 'PLIST'
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+  <key>CFBundleExecutable</key>
+  <string>MorseRunner</string>
+  <key>CFBundleIdentifier</key>
+  <string>com.morserunner.MorseRunner</string>
+  <key>CFBundleName</key>
+  <string>Morse Runner</string>
+  <key>CFBundleVersion</key>
+  <string>1.85.3</string>
+  <key>CFBundlePackageType</key>
+  <string>APPL</string>
+  <key>LSMinimumSystemVersion</key>
+  <string>11.0</string>
+  <key>CFBundleIconFile</key>
+  <string>MorseRunner</string>
+  <key>NSHighResolutionCapable</key>
+  <true/>
+</dict>
+</plist>
+PLIST
+  codesign --force --deep -s - "$APP" 2>/dev/null || true
+  echo "=== MorseRunner.app bundle ready ==="
+}
+
+# Ensure AudioBackend2.o is present and up-to-date
+if [ ! -f mac/VCL/AudioBackend2.o ] || [ mac/VCL/AudioBackend2.m -nt mac/VCL/AudioBackend2.o ]; then
+  echo "=== Rebuilding AudioBackend2.o ==="
+  /Library/Developer/CommandLineTools/usr/bin/clang -c \
+    -fPIC \
+    -arch arm64 \
+    -mmacosx-version-min=11.0 \
+    -fno-objc-arc \
+    -isysroot /Library/Developer/CommandLineTools/SDKs/MacOSX.sdk \
+    -o mac/VCL/AudioBackend2.o \
+    mac/VCL/AudioBackend2.m
+fi
+
+# Delete the binary so lazbuild is forced to relink even when only
+# implementation code (e.g. Paint procedures) changed with no interface change.
+rm -f "$BINARY"
+
+# Sync .lfm files from source into the output dir. The lpi puts $(ProjOutDir)
+# first in FPC's include path, so FPC reads .lfm resources from there — edits
+# to mac/*.lfm must be mirrored here before building.
+mkdir -p lib/aarch64-darwin
+for lfm in mac/*.lfm mac/VCL/*.lfm; do
+  [ -f "$lfm" ] && cp "$lfm" "lib/aarch64-darwin/$(basename "$lfm")"
+done
+
+# Delete all project .ppu files so FPC always does a clean recompile of
+# project units. Incremental builds with selective ppu deletion cause
+# persistent checksum mismatch cascades (ArrlFd ↔ ContestFactory ↔ Main).
+# LCL/RTL ppus in ~/.lazarus are untouched, so those still cache correctly.
+rm -f lib/aarch64-darwin/*.ppu
+
+# Run lazbuild. It will compile Pascal → assemble → then try to link with the
+# new ld and fail. We catch that failure, patch ppaslink.sh, and re-run link.
+# Output is captured; only shown on a real compile failure (missing ppaslink.sh).
+echo "=== Compiling ==="
+LAZLOG=$(mktemp)
+/Applications/Lazarus/lazbuild MorseRunner.lpi \
+  --ws=cocoa \
+  --compiler=/usr/local/bin/fpc \
+  --cpu=aarch64 \
+  --os=darwin \
+  > "$LAZLOG" 2>&1 || true   # ignore error; we'll check if ppaslink.sh needs patching
+
+# If lazbuild succeeded (produced binary directly), great.
+if [ -x "$BINARY" ] && [ "$BINARY" -nt "$PPASLINK" ]; then
+  echo "=== Build successful (no ld patch needed) ==="
+  rm -f "$LAZLOG"
+  build_app_bundle
+  exit 0
+fi
+
+# Patch ppaslink.sh to use ld-classic
+# Note: Lazarus 3.7+ writes ppaslink.sh into the unit output dir, not project root
+if [ ! -f "$PPASLINK" ]; then
+  echo "ERROR: compile step failed — lazbuild output:"
+  cat "$LAZLOG"
+  rm -f "$LAZLOG"
+  exit 1
+fi
+rm -f "$LAZLOG"
+
+if grep -q "$LD_NEW " "$PPASLINK" && ! grep -q "ld-classic" "$PPASLINK"; then
+  echo "=== Patching ppaslink.sh: ld → ld-classic ==="
+  sed -i '' "s|${LD_NEW} |${LD_OLD} |g" "$PPASLINK"
+fi
+
+echo "=== Linking with ld-classic ==="
+bash "$PPASLINK"
+
+if [ ! -x "$BINARY" ]; then
+  echo "ERROR: MorseRunner not produced"
+  exit 1
+fi
+build_app_bundle

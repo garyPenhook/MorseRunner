@@ -172,7 +172,7 @@ lazarus-core-test: check-toolchain
 
 check-native-engine:
 	@test -f $(ENGINE_DIR)/MorseRunner_linux.lpi || \
-		(echo "Native engine submodule is missing; run: git submodule update --init --recursive" >&2; exit 1)
+		(echo "Native engine source is missing from $(ENGINE_DIR)." >&2; exit 1)
 
 check-package-arch:
 	@test "$(DEB_ARCH)" = amd64 || \
@@ -214,7 +214,7 @@ $(LAZARUS_GTK3_BUILD_STAMP): $(LAZARUS_GTK3_PATCH_STAMP)
 	touch $@
 
 # The production Linux target is the full original Morse Runner engine and UI.
-# Its reviewed Linux fixes are pinned in the project-owned engine submodule.
+# Its reviewed Linux fixes are included in this repository under native/engine.
 # Historical overlays remain in patches/ for provenance, but are not replayed:
 # their former dry-run detection could mark a patch as applied without changing
 # a fresh checkout.

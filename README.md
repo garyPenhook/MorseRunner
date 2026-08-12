@@ -11,11 +11,10 @@ documentation around that engine.
 
 ## Build and run
 
-Clone the repository with its pinned native engine, then build the production
-application:
+Clone the repository, then build the production application. The native engine
+is included under `native/engine`:
 
 ```sh
-git submodule update --init --recursive
 make bootstrap-toolchain
 make linux-app
 ./build/bin/morserunner-linux
