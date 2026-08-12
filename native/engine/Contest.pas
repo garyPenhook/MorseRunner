@@ -18,6 +18,7 @@ type
   TContest = class
   private
     LastLoadCallsign : String;  // used to minimize call history file reloads
+    RecentDxCalls: TStringList;
 
     function DxCount: integer;
     procedure SwapFilters;
@@ -55,6 +56,7 @@ type
     procedure GetExchange(id : integer; var station : TDxStation); virtual; abstract;
     function GetRandomSerialNR: Integer; virtual;
     function GetStationInfo(const ACallsign : string) : string; virtual;
+    function PickDxCall(out AStationId: Integer): string;
     function PickCallOnly : string;
 
     function OnSetMyCall(const AUserCallsign : string; out err : string) : boolean; virtual;
@@ -130,6 +132,9 @@ begin
   Filt := TMovingAverage.Create(nil);
   Modul := TModulator.Create;
   Agc := TVolumeControl.Create(nil);
+  RecentDxCalls := TStringList.Create;
+  RecentDxCalls.Sorted := True;
+  RecentDxCalls.Duplicates := dupIgnore;
 
   Filt.Points := Round(0.7 * DEFAULTRATE / Ini.BandWidth);
   Filt.Passes := 3;
@@ -161,6 +166,7 @@ end;
 
 destructor TContest.Destroy;
 begin
+  RecentDxCalls.Free;
   Me.Free;
   FreeAndNil(Stations);
   Filt.Free;
@@ -173,6 +179,7 @@ end;
 
 procedure TContest.Init;
 begin
+  RecentDxCalls.Clear;
   Me.Init;
   Stations.Clear;
   BlockNumber := 0;
@@ -240,8 +247,44 @@ function TContest.PickCallOnly : string;
 var
   id : integer;
 begin
-  id := PickStation;
-  Result := GetCall(id);
+  Result := PickDxCall(id);
+end;
+
+function TContest.PickDxCall(out AStationId: Integer): string;
+const
+  RECENT_CALL_LIMIT = 32;
+  MAX_ATTEMPTS = 64;
+var
+  Attempt: Integer;
+begin
+  // HST removes each selected call from its source list, so another draw
+  // would consume an extra call without using it.
+  if Ini.RunMode = rmHst then
+  begin
+    AStationId := PickStation;
+    Result := GetCall(AStationId);
+    Exit;
+  end;
+
+  for Attempt := 1 to MAX_ATTEMPTS do
+  begin
+    AStationId := PickStation;
+    Result := GetCall(AStationId);
+    if RecentDxCalls.IndexOf(Result) < 0 then
+    begin
+      RecentDxCalls.Add(Result);
+      while RecentDxCalls.Count > RECENT_CALL_LIMIT do
+        RecentDxCalls.Delete(0);
+      Exit;
+    end;
+  end;
+
+  // Very small call lists can exhaust the recent window. Start a new random
+  // cycle instead of repeatedly favoring a single remaining entry.
+  RecentDxCalls.Clear;
+  AStationId := PickStation;
+  Result := GetCall(AStationId);
+  RecentDxCalls.Add(Result);
 end;
 
 

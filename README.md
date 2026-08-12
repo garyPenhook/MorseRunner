@@ -115,6 +115,8 @@ buttons to adjust the limits.
 
 - The bundled `MASTER.SCP` Super Check Partial list contains 50,029 callsigns;
   generated callers are selected from this list.
+- All contest modes avoid the previous 32 generated calls before allowing a
+  repeat. HST mode already uses each selected callsign once per session.
 - Settings, recordings, and HST results are stored in
   `$XDG_DATA_HOME/MorseRunner/` (normally `~/.local/share/MorseRunner/`).
 - GTK3 backend diagnostics are retained in

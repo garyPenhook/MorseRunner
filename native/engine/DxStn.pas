@@ -52,8 +52,7 @@ begin
   HisCall := Ini.Call;
 
   // Pick one Callsign from call history file
-  Operid := Tst.PickStation;
-  MyCall := Tst.GetCall(Operid);
+  MyCall := Tst.PickDxCall(Operid);
 
   Oper := TDxOperator.Create(MyCall, osNeedPrevEnd);
   NrWithError := Ini.Lids and (Random < 0.1);
@@ -318,4 +317,3 @@ begin
 end;
 
 end.
-
