@@ -113,7 +113,8 @@ buttons to adjust the limits.
 
 ## Data and diagnostics
 
-- The bundled `MASTER.SCP` Super Check Partial list supplies the callsigns.
+- The bundled `MASTER.SCP` Super Check Partial list contains 50,029 callsigns;
+  generated callers are selected from this list.
 - Settings, recordings, and HST results are stored in
   `$XDG_DATA_HOME/MorseRunner/` (normally `~/.local/share/MorseRunner/`).
 - GTK3 backend diagnostics are retained in
