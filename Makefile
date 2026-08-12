@@ -65,6 +65,7 @@ ENGINE_AUDIO_CFLAGS ?= -std=c17 -O2 -fPIC -Wall -Wextra -Wpedantic \
 	-Wmissing-prototypes -Wformat=2 -Wundef
 ENGINE_BINARY := $(ENGINE_DIR)/MorseRunner
 DESKTOP_ICON := assets/morserunner-desktop-icon.png
+APPIMAGE_ICON := assets/morserunner-appimage-icon-256.png
 WINDOW_ICON := assets/morserunner-desktop-icon.ico
 ENGINE_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-scp-patch-applied
 ENGINE_UI_PATCH_STAMP := $(ENGINE_DIR)/.morserunner-ui-patch-applied
@@ -383,12 +384,12 @@ appimage: check-package-arch check-appimage-tools linux-app $(APPIMAGE_TOOL)
 	rm -f "$(APPIMAGE_OUTPUT)"
 	install -d "$(APPIMAGE_ROOT)"
 	$(MAKE) install PREFIX="$(APPIMAGE_ROOT)/usr" \
-		DESKTOP_ICON_PATH="/usr/share/icons/hicolor/256x256/apps/morserunner.png"
+		DESKTOP_ICON_PATH="morserunner"
 	install -d "$(APPIMAGE_ROOT)/usr/share/doc/morserunner-linux"
 	install -m 644 LICENSE "$(APPIMAGE_ROOT)/usr/share/doc/morserunner-linux/MPL-2.0.txt"
 	install -m 644 packaging/debian/copyright "$(APPIMAGE_ROOT)/usr/share/doc/morserunner-linux/copyright"
 	install -m 644 packaging/morserunner.desktop "$(APPIMAGE_ROOT)/morserunner.desktop"
-	install -m 644 $(DESKTOP_ICON) "$(APPIMAGE_ROOT)/morserunner.png"
+	install -m 644 $(APPIMAGE_ICON) "$(APPIMAGE_ROOT)/morserunner.png"
 	install -m 755 packaging/AppRun "$(APPIMAGE_ROOT)/AppRun"
 	APPIMAGE_EXTRACT_AND_RUN=1 $(LINUXDEPLOY) --appdir "$(APPIMAGE_ROOT)" \
 		--executable "$(APPIMAGE_ROOT)/usr/lib/morserunner/MorseRunner" \
