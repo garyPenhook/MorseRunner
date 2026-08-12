@@ -18,6 +18,9 @@ jobs:
           docker version
           make --version
 
+      - name: Fetch AppImage tools
+        run: make appimage-tools
+
       - name: Build and test against the portable glibc baseline
         run: |
           make container-test

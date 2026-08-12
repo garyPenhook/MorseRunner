@@ -91,7 +91,7 @@ ENGINE_RUNTIME_DATA := ARRLDXCW_USDX.txt CQWWCW.txt CWOPS.LIST DXCC.LIST \
 	FDGOTA.txt IARU_HF.txt JARL_ACAG.TXT JARL_ALLJA.TXT K1USNSST.txt \
 	MASTER.DTA MASTER.SCP NAQPCW.txt Readme.txt SSCW.txt
 
-.PHONY: bootstrap-toolchain check-toolchain check-native-engine check-package-arch check-appimage-tools lcl-gtk3 core-test lazarus-core-test linux-app install deb deb-test appimage appimage-test preview-app audio-smoke-test update-call-list container-build container-test container-release clean
+.PHONY: bootstrap-toolchain check-toolchain check-native-engine check-package-arch check-appimage-tools appimage-tools lcl-gtk3 core-test lazarus-core-test linux-app install deb deb-test appimage appimage-test preview-app audio-smoke-test update-call-list container-build container-test container-release clean
 
 bootstrap-toolchain:
 	sh scripts/bootstrap-toolchain.sh .toolchain
@@ -183,6 +183,8 @@ check-package-arch:
 check-appimage-tools: $(LINUXDEPLOY_TOOL)
 	@test -x "$(LINUXDEPLOY)" || \
 		(echo "A reviewed linuxdeploy executable is required to bundle AppImage dependencies." >&2; exit 1)
+
+appimage-tools: $(APPIMAGE_TOOL) $(LINUXDEPLOY_TOOL)
 
 ifeq ($(wildcard $(LOCAL_LAZBUILD)),)
 # System Lazarus builds are supported for the portable-container target. The
