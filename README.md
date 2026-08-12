@@ -51,6 +51,20 @@ This installs `morserunner` (with `morserunner-linux` retained as an alias),
 a freedesktop.org desktop entry, an icon, the contest data, and the full
 native engine.
 
+### Run the portable AppImage
+
+Download `MorseRunner-<version>-x86_64.AppImage` from the
+[GitHub Releases](https://github.com/garyPenhook/MorseRunner/releases) page,
+make it executable, and run it without installing anything system-wide:
+
+```sh
+chmod +x MorseRunner-*-x86_64.AppImage
+./MorseRunner-*-x86_64.AppImage
+```
+
+The AppImage is built for x86_64 Linux systems. It keeps user settings and
+recordings in the same XDG locations as the installed application.
+
 ### Release artifacts
 
 Build a Debian package and validate its extracted installation layout:
